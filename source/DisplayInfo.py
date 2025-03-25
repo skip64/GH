@@ -19,6 +19,7 @@ import webbrowser
 import Parameters
 import StoreLoad
 import os
+import subprocess
 
 
 def plot_info(data_list, header_list, path, to_html=True, to_csv=False):
@@ -45,15 +46,54 @@ def plot_info(data_list, header_list, path, to_html=True, to_csv=False):
         csv_path = path + '.csv'
         data_frame.to_csv(csv_path)
 
-
+"""
 def display_html(shtml):
-    """Display the given html code in a browser"""
+    #Display the given html code in a browser
     s = 'temp.html'
+
+    # Ensure the temp folder exists
+    os.makedirs(Parameters.temp_folder, exist_ok=True)
+
     temp_path = os.path.join(Parameters.temp_folder, s)
     with open(temp_path, "w") as html_file:
         html_file.write(shtml)
     url = f'file:{pathname2url(os.path.abspath(temp_path))}'
-    webbrowser.open_new_tab(url)
+
+    # Set BROWSER to Windows explorer.exe (only relevant if working on WSL)
+    os.environ["BROWSER"] = "/mnt/c/Program Files/Google/Chrome/Application/chrome.exe"
+"""
+
+def display_html(shtml):
+    #Display the given html code in a browser
+    s = 'temp.html'
+
+    # Ensure the temp folder exists
+    os.makedirs(Parameters.temp_folder, exist_ok=True)
+
+    temp_path = os.path.join(Parameters.temp_folder, s)
+    with open(temp_path, "w") as html_file:
+        html_file.write(shtml)
+    url = f'file:{pathname2url(os.path.abspath(temp_path))}'
+
+    # Set BROWSER to Windows explorer.exe (only relevant if working on WSL)
+    os.environ["BROWSER"] = "/mnt/c/Program Files/Google/Chrome/Application/chrome.exe"
+
+        # Get the absolute Linux path
+    linux_path = os.path.abspath(temp_path)
+    
+    # Convert the Linux path to a Windows path using wslpath -w
+    windows_path = subprocess.check_output(["wslpath", "-w", linux_path]).decode().strip()
+    
+    # Build the file URL. Replace backslashes with forward slashes.
+    file_url = "file:///" + windows_path.replace("\\", "/")
+    
+    # Set BROWSER to Chrome installed on Windows (using the WSL mount)
+    #os.environ["BROWSER"] = "/mnt/c/Program Files/Google/Chrome/Application/chrome.exe"
+    chrome_path = r"/mnt/c/Program Files/Google/Chrome/Application/chrome.exe"
+    # Open the file URL in a new tab
+    #webbrowser.open_new_tab(file_url)
+    subprocess.Popen([chrome_path, file_url])
+
 
 def display_html_body(s):
     """Displays a html page with the string s as body"""
