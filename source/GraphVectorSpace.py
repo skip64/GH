@@ -557,7 +557,7 @@ class GraphVectorSpace(VectorSpace):
         ba = self.get_basis()
         for (j, G) in enumerate(ba):
             path = os.path.join(self.get_plot_path(),  '%d.png' % (j))
-            if (not skip_existing) or (not os.path.isfile(path)):
+            if skip_existing or (not os.path.isfile(path)):
                 StoreLoad.generate_path(path)
                 P = self.plot_graph(G)
                 P.save(path)
