@@ -86,31 +86,31 @@ test_euler_char(6, 5, coefficients=[-1, 1, 1, 2], diagrams=[[2,1,1,1], [3,1,1], 
 
 # excess = 4
 test_euler_char(9, 1, coefficients=[1], diagrams=[[1]], excess=4)
-#test_euler_char(7, 4, coefficients=[2, -2], diagrams=[[2,2], [3,1]], excess=4)
+test_euler_char(7, 4, coefficients=[2, -2], diagrams=[[2,2], [3,1]], excess=4)
 
 # excess = 5
 test_euler_char(10, 0, coefficients=[-2], diagrams=[[]], excess=5)
-#test_euler_char(8, 3, coefficients=[4], diagrams=[[1,1,1]], excess=5)
-#test_euler_char(6, 6, coefficients=[-4, -2, -3, -3, 1, -2, -2, 2, -3, -2 ,-3], 
-#                diagrams=[[1,1,1,1,1,1], [2,1,1,1,1], [2,2,1,1], [2,2,2], 
-#                          [3,1,1,1], [3,2,1], [3,3], [4,1,1], [4,2], [5,1], [6]], excess=5)
+test_euler_char(8, 3, coefficients=[4], diagrams=[[1,1,1]], excess=5)
+test_euler_char(6, 6, coefficients=[-4, -2, -3, -3, 1, -2, -2, 2, -3, -2 ,-3], 
+                diagrams=[[1,1,1,1,1,1], [2,1,1,1,1], [2,2,1,1], [2,2,2], 
+                          [3,1,1,1], [3,2,1], [3,3], [4,1,1], [4,2], [5,1], [6]], excess=5)
 
 # excess = 6
-#test_euler_char(9, 2, coefficients=[4], diagrams=[[2]], excess=6)
-#test_euler_char(7, 5, coefficients=[-1, -7, -6, 2, 1, 4], diagrams=[[1,1,1,1,1], [2,1,1,1], [3,1,1], [3,2], [4,1], [5]], excess=6)
+test_euler_char(9, 2, coefficients=[4], diagrams=[[2]], excess=6)
+test_euler_char(7, 5, coefficients=[-1, -7, -6, 2, 1, 4], diagrams=[[1,1,1,1,1], [2,1,1,1], [3,1,1], [3,2], [4,1], [5]], excess=6)
 
 # excess = 7
-#test_euler_char(10, 1, coefficients=[-6], diagrams=[[1]], excess=7)
-#test_euler_char(8, 4, coefficients=[10, 2, -2, -10, -3], diagrams=[[1,1,1,1], [2,1,1], [2,2], [3,1], [4]], excess=7)
+test_euler_char(10, 1, coefficients=[-6], diagrams=[[1]], excess=7)
+test_euler_char(8, 4, coefficients=[10, 2, -2, -10, -3], diagrams=[[1,1,1,1], [2,1,1], [2,2], [3,1], [4]], excess=7)
 
 
 # excess = 8
-#test_euler_char(11, 0, coefficients=[2], diagrams=[[]], excess=8)
-#test_euler_char(9, 3, coefficients=[1, 11, 4], diagrams=[[1,1,1], [2,1], [3]], excess=8)
+test_euler_char(11, 0, coefficients=[2], diagrams=[[]], excess=8)
+test_euler_char(9, 3, coefficients=[1, 11, 4], diagrams=[[1,1,1], [2,1], [3]], excess=8)
 
 # excess = 9
-#test_euler_char(10, 2, coefficients=[-9, -2], diagrams=[[1,1], [2]], excess=9)
+test_euler_char(10, 2, coefficients=[-9, -2], diagrams=[[1,1], [2]], excess=9)
 
 # excess = 10
-#test_euler_char(11, 1, coefficients=[1], diagrams=[[1]], excess=10)
+test_euler_char(11, 1, coefficients=[1], diagrams=[[1]], excess=10)
 

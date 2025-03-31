@@ -34,9 +34,13 @@ test_basis_len("excess 1: B_6_4", 5, 6, 4, 11, 19)
 test_basis_len("excess 2: B_7_3", 16, 7, 3, 11, 20)
 
 
-# testing excess 3
 
-V = WOHairyFinalGraphComplex.WOHairyFinalGVS(genus=8, n=2, n_omega=11, degree=20)
+# Manual Testing
+
+# big components
+#V = WOHairyFinalGraphComplex.WOHairyFinalGVS(genus=11, n=0, n_omega=11, degree=30)
+
+V = WOHairyFinalGraphComplex.WOHairyFinalGVS(genus=9, n=0, n_omega=11, degree=22)
 
 print("is valid: " + str(V.is_valid()))
 print("excess:", V.excess)

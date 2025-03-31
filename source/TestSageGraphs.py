@@ -16,3 +16,4 @@ print(G.vertices())
 #print(G.vertices(sort=True))
 print(G.edges())
 
+

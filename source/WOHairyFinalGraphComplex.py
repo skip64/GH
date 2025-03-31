@@ -22,20 +22,15 @@ import Parameters
 import WOHairyAggregatedGraphComplex
 import GraphVectorSpace
 import matplotlib.pyplot as plt
+import GraphComplex
 
 
 graph_type = "wohairy_final"
-
 
 # ------- Graph Vector Space --------
 class WOHairyFinalGVS(GraphVectorSpace.GraphVectorSpace):
 
     def __init__(self, genus, n, n_omega, degree):
-
-        # -> genus & degreee bestimmt anzahl vertices !
-        # epsilons zusammenkleben sorgt für einheitliche Partition
-
-        #print("initializing WOHairyFinalGVS ---")
 
         self.genus = genus
         self.n = n
@@ -62,44 +57,34 @@ class WOHairyFinalGVS(GraphVectorSpace.GraphVectorSpace):
                                    ('omegas', self.n_omega), ('degree', self.degree)])
 
 
-    # since we don't a priori know the number of epsilons, we also need to pass the graph G
-    def get_partition(self, G):
+    # since we don't a priori know the number of epsilons, 
+    # we also need to pass the total number of vertices of the graph to compute n_epsilon 
+    def get_partition(self, n_epsilon):
         
-        n_epsilon = len(G.vertices()) - self.n_vertices - self.n - self.n_omega
-        assert n_epsilon >= 0
-
-        if self.n_vertices > 0: inner_vertices = [list(range(0, self.n_vertices))]
-        else: inner_vertices = [[]]
-
-        numbered_vertices = [[j] for j in range(self.n_vertices, self.n_vertices + self.n)]
-
-        omega_vertices = [list(range(self.n_vertices + self.n, self.n_vertices + self.n + self.n_omega))]
-
-        if n_epsilon > 0: epsilon_vertices = [list(range(self.n_vertices + self.n + self.n_omega, 
-                                                            self.n_vertices + self.n + self.n_omega + n_epsilon))]
-        else: epsilon_vertices = [[]]
-
-        #print("inner_vertices: ", str(inner_vertices))
-        #print("numbered_vertices: ", str(numbered_vertices))
-        #print("omega_vertices: ", str(omega_vertices))
-        #print("epsilon_vertices: ", str(epsilon_vertices))
+        # knowing the number of epsilons we can use the previously implemented partition
+        V = WOHairyAggregatedGraphComplex.WOHairyAggregatedGVS(n_components=0,
+                                         n_vertices=self.n_vertices,
+                                         genus=self.genus,
+                                         n=self.n,
+                                         n_omega=self.n_omega,
+                                         n_epsilon=n_epsilon,
+                                         n_double_legs=0,
+                                         do_print=False)
         
-        partition = inner_vertices + numbered_vertices + omega_vertices + epsilon_vertices
-        
-        #print(partition)
-
-        return partition
+        return V.get_partition()
 
 
+    # ensure repeatable coloring ----
     def plot_graph(self, G):
-        #print("plotting final graph")
-        GG = Graph(G)  # , loops=True)
-        #print(self.get_partition())
+        
+        GG = Graph(G)  
 
-        # ensure repeatable coloring ----
+        n_epsilon = len(GG.vertices()) - self.n_vertices - self.n - self.n_omega
+        assert n_epsilon >= 0
+        
+        partition = self.get_partition(n_epsilon)
 
-        partition = self.get_partition(G)
-        assert len(partition) == self.n + 3
+        assert len(partition) >= self.n + 2
 
         color_dict = {}
 
@@ -117,10 +102,8 @@ class WOHairyFinalGVS(GraphVectorSpace.GraphVectorSpace):
         color_dict.update({"red":partition[self.n + 1]}) 
 
         # epsilon vertices
-        color_dict.update({"magenta":partition[self.n + 2]}) 
-        
-        #print(partition)
-        #print(color_dict)
+        if n_epsilon > 0:
+            color_dict.update({"magenta":partition[self.n + 2]}) 
 
         return GG.plot(vertex_colors=color_dict, vertex_labels=True)
 
@@ -186,6 +169,7 @@ class WOHairyFinalGVS(GraphVectorSpace.GraphVectorSpace):
                             yield G
 
 
+    # modified build_basis from GraphVectorSpace class, since we also need to pass n_epsilon to the partition.
     def build_basis(self, progress_bar=False, ignore_existing_files=False, **kwargs):
         """Build the basis of the vector space.
 
@@ -218,17 +202,21 @@ class WOHairyFinalGVS(GraphVectorSpace.GraphVectorSpace):
         basis_set = set()
         # for G in tqdm(generating_list, desc=desc, disable=(not progress_bar)):
         for G in generating_list:
+
+            n_epsilon = len(G.vertices()) - self.n_vertices - self.n - self.n_omega
+            assert n_epsilon >= 0
+
             # For each graph G in the generating list, add the canonical labeled graph6 representation to the basis set
             # if the graph G doesn't have odd automormphisms.
-            if self.get_partition(G) is None:
+            if self.get_partition(n_epsilon) is None:
                 autom_list = G.automorphism_group().gens()
                 canonG = G.canonical_label(
                     algorithm=Parameters.canonical_label_algorithm)
             else:
                 # The canonical labelling respects the partition of the vertices.
                 autom_list = G.automorphism_group(
-                    partition=self.get_partition(G)).gens()
-                canonG = G.canonical_label(partition=self.get_partition(G), algorithm=Parameters.canonical_label_algorithm)
+                    partition=self.get_partition(n_epsilon)).gens()
+                canonG = G.canonical_label(partition=self.get_partition(n_epsilon), algorithm=Parameters.canonical_label_algorithm)
 
             canon6 = canonG.graph6_string()
 
