@@ -16,7 +16,7 @@ graph_type = "wohairy_final"
 
 """
 Implementation-Notes:
-- do not need sub_type: (even / odd)
+- do not need sub_type: (even / odd) -> will try to remove...
 """
 
 
@@ -105,6 +105,7 @@ class EpsToOmegaGO(SymmetricGraphComplex.SymmetricGraphOperator):
         # reconnect one eps edge to the new vertex
         eps = self.domain.n_vertices
         new_w = self.domain.n_vertices+1
+        # in my case we go through all epsilon vertices instead. (may be empty)
         for v in G1.neighbors(eps):
             sgn2 = sgn
             G2 = copy(G1)
