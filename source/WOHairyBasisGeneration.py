@@ -35,11 +35,10 @@ import OrdinaryGraphComplex
 import math
 import GraphVectorSpace
 import matplotlib.pyplot as plt
+import GCDimensions
 
 
 
-
-graph_type = "wohairy_component"
 
 # ------- Graph Vector Space --------
 class WOHairyComponentGVS(CHairyGraphComplex.CHairyGraphVS):
@@ -68,11 +67,11 @@ class WOHairyComponentGVS(CHairyGraphComplex.CHairyGraphVS):
 
     def get_basis_file_path(self):
         s = "wo_comp_gra%d_%d_%d_%d_%d.g6" % self.get_ordered_param_dict().get_value_tuple()
-        return os.path.join(Parameters.data_dir, graph_type, s)
+        return os.path.join(Parameters.data_dir, "wohairy_component", s)
 
     def get_ref_basis_file_path(self):
         s = "wo_comp_gra%d_%d_%d_%d_%d.g6" % self.get_ordered_param_dict().get_value_tuple()
-        return os.path.join(Parameters.ref_data_dir, graph_type, self.sub_type, s)
+        return os.path.join(Parameters.ref_data_dir, "wohairy_component", self.sub_type, s)
 
     def get_ordered_param_dict(self):
         return Shared.OrderedDict([('vertices', self.n_vertices), ('loops', self.n_loops), ('numbered_hairs', self.n), 
@@ -218,7 +217,6 @@ def multiset_permutations(n_vertices, n, n_omega, n_epsilon):
 
 
 
-graph_type = "wohairy_aggregated"
 
 class WOHairyAggregatedGVS(WOHairyComponentGVS):
 
@@ -273,11 +271,11 @@ class WOHairyAggregatedGVS(WOHairyComponentGVS):
 
     def get_basis_file_path(self):
         s = "wo_agg_gra%d_%d_%d_%d_%d_%d_%d.g6" % self.get_ordered_param_dict().get_value_tuple()
-        return os.path.join(Parameters.data_dir, graph_type, s)
+        return os.path.join(Parameters.data_dir, "wohairy_aggregated", s)
 
     def get_ref_basis_file_path(self):
         s = "wo_agg_gra%d_%d_%d_%d_%d_%d_%d.g6" % self.get_ordered_param_dict().get_value_tuple()
-        return os.path.join(Parameters.ref_data_dir, graph_type, self.sub_type, s)
+        return os.path.join(Parameters.ref_data_dir, "wohairy_aggregated", self.sub_type, s)
 
     def get_ordered_param_dict(self):
         return Shared.OrderedDict([('components', self.n_components), ('vertices', self.n_vertices), ('genus', self.genus), ('numbered_hairs', self.n), 
@@ -418,26 +416,6 @@ class WOHairyAggregatedGVS(WOHairyComponentGVS):
                 #print("built basis 2")
                 #print("dimension V_1:", V_1.get_dimension())
                 #print("dimension V_2:", V_2.get_dimension())
-
-                if V_1.get_dimension() > 0 and V_2.get_dimension()>0 and False:
-                    print("actually possible configuration", configuration)
-
-                    print("n_components_1", n_components_1)
-                    print("n_vert_1", n_vert_1)
-                    print("genus_1", genus_1)
-                    print("n_1", n_1)
-                    print("n_omega_1", n_omega_1)
-                    print("n_eps_1", n_eps_1)
-                    print("n_DL_1", n_DL_1)
-                
-                    print("n_components_2", n_components_2)
-                    print("n_vert_2", n_vert_2)
-                    print("genus_2", genus_2)
-                    print("n_2", n_2)
-                    print("n_omega_2", n_omega_2)
-                    print("n_eps_2", n_eps_2)
-                    print("n_DL_2", n_DL_2)
-                
                 
                 # join graphs
                 #print("joining possible graph combinations")
@@ -638,14 +616,6 @@ def reorder_vertices(old_order, n_vert_1, n_vert_2, n_1, n_2, n_omega_1, n_omega
 
 
 
-
-
-
-
-
-
-graph_type = "wohairy_final"
-
 class WOHairyFinalGVS(GraphVectorSpace.GraphVectorSpace):
 
     def __init__(self, genus, n, n_omega, degree):
@@ -664,11 +634,11 @@ class WOHairyFinalGVS(GraphVectorSpace.GraphVectorSpace):
 
     def get_basis_file_path(self):
         s = "wo_fin_gra%d_%d_%d_%d.g6" % self.get_ordered_param_dict().get_value_tuple()
-        return os.path.join(Parameters.data_dir, graph_type, s)
+        return os.path.join(Parameters.data_dir, "wohairy_final", s)
 
     def get_ref_basis_file_path(self):
         s = "wo_fin_gra%d_%d_%d_%d.g6" % self.get_ordered_param_dict().get_value_tuple()
-        return os.path.join(Parameters.ref_data_dir, graph_type, self.sub_type, s)
+        return os.path.join(Parameters.ref_data_dir, "wohairy_final", self.sub_type, s)
 
     def get_ordered_param_dict(self):
         return Shared.OrderedDict([('genus', self.genus), ('n', self.n), 
@@ -845,6 +815,13 @@ class WOHairyFinalGVS(GraphVectorSpace.GraphVectorSpace):
         L = list(basis_set)
         L.sort()
         self._store_basis_g6(L)
+
+
+    def get_work_estimate(self):
+        # TODO
+        return 0
+        
+
 
     
 
