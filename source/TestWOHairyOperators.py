@@ -1,11 +1,19 @@
-from WOHairyOperators import EpsToOmegaGO
+from WOHairyOperators import WOHairyGC
 
-genus = 9
-n = 0
-n_omega = 11
-degree = 22
+GC = WOHairyGC(genus_range=range(7,9), 
+               n_range=range(0,3), 
+               omega_range=range(11,13), 
+               degree_range=range(10,30), 
+               differentials=['epstoomega'])
 
-Operator = EpsToOmegaGO.generate_operator(genus, n, n_omega, degree)
+# GC.build_basis(ignore_existing_files=False)
+GC.build_basis(ignore_existing_files=False)
 
-D = Operator.get_matrix()
+# GC.build_matrix(ignore_existing_files=False)
+GC.build_matrix(ignore_existing_files=True)
+
+GC.compute_rank(sage="integer", ignore_existing_files=False)
+
+GC.print_dim_and_eulerchar()
+GC.print_cohomology_dim()
 

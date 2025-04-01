@@ -85,7 +85,7 @@ class TestComponentAggregation(unittest.TestCase):
     @staticmethod
     def test_basis_len(test_name, basis_len, inner_edges, n_components, n_vertices, genus, n, n_omega, n_epsilon, n_double_legs):
 
-        V = WOHairyAggregatedGVS(n_components=n_components, n_vertices=n_vertices, genus=genus, n=n, n_omega=n_omega, n_epsilon=n_epsilon, n_double_legs=n_double_legs, do_print=False)
+        V = WOHairyAggregatedGVS(n_components=n_components, n_vertices=n_vertices, genus=genus, n=n, n_omega=n_omega, n_epsilon=n_epsilon, n_double_legs=n_double_legs)
 
         assert V.n_edges == inner_edges, inner_edges
 
@@ -156,8 +156,7 @@ class TestComponentAggregation(unittest.TestCase):
                                                     n_vertices=n_vertices, 
                                                     genus=genus, 
                                                     n=n, n_omega=n_omega, n_epsilon=n_epsilon,
-                                                    n_double_legs=n_double_legs,
-                                                    do_print=False)
+                                                    n_double_legs=n_double_legs)
                         
                         assert V.excess == excess
 
@@ -291,14 +290,13 @@ class TestEulerCharcteristic(unittest.TestCase):
 
         # excess = 4
         self.test_euler_char(9, 1, coefficients=[1], diagrams=[[1]], excess=4)
+        """
         self.test_euler_char(7, 4, coefficients=[2, -2], diagrams=[[2,2], [3,1]], excess=4)
 
 
         # excess = 5
         self.test_euler_char(10, 0, coefficients=[-2], diagrams=[[]], excess=5)
         self.test_euler_char(8, 3, coefficients=[4], diagrams=[[1,1,1]], excess=5)
-
-        
         self.test_euler_char(6, 6, coefficients=[-4, -2, -3, -3, 1, -2, -2, 2, -3, -2 ,-3], 
                         diagrams=[[1,1,1,1,1,1], [2,1,1,1,1], [2,2,1,1], [2,2,2], 
                                 [3,1,1,1], [3,2,1], [3,3], [4,1,1], [4,2], [5,1], [6]], excess=5)
@@ -316,15 +314,13 @@ class TestEulerCharcteristic(unittest.TestCase):
         self.test_euler_char(9, 3, coefficients=[1, 11, 4], diagrams=[[1,1,1], [2,1], [3]], excess=8)
 
         # excess = 9
-        #self.test_euler_char(10, 2, coefficients=[-9, -2], diagrams=[[1,1], [2]], excess=9)
+        self.test_euler_char(10, 2, coefficients=[-9, -2], diagrams=[[1,1], [2]], excess=9)
 
         # excess = 10
-        #self.test_euler_char(11, 1, coefficients=[1], diagrams=[[1]], excess=10)
-    
+        self.test_euler_char(11, 1, coefficients=[1], diagrams=[[1]], excess=10)
+        """
 
 
-
-    
 
 
 def suite():

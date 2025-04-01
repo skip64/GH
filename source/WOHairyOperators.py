@@ -6,7 +6,7 @@ import StoreLoad
 import math
 import Shared
 from copy import copy
-from WOHairyFinalGraphComplex import WOHairyFinalGVS
+from WOHairyBasisGeneration import WOHairyFinalGVS
 import GraphVectorSpace
 import itertools
 import GraphComplex
@@ -55,9 +55,6 @@ class WOHairyGraphSumVS(GraphVectorSpace.SumVectorSpace):
 
 class EpsToOmegaGO(SymmetricGraphComplex.SymmetricGraphOperator):
     """Operator that makes one eps into an omega hair.
-
-    Attributes:
-        - sub_type (str): Graphs sub type of the domain.
     """
 
     def __init__(self, domain, target):
@@ -85,11 +82,69 @@ class EpsToOmegaGO(SymmetricGraphComplex.SymmetricGraphOperator):
         return os.path.join(Parameters.data_dir, graph_type, s)
 
 
+    def get_work_estimate(self):
+        return 0
+
     def get_type(self):
         return 'contract edges'
 
+
     # TODO
     def operate_on(self, G):
+        # self.domain is a WOHairyFinalGVS instance
+        # replaces one epsilon vertex with an omega vertex
+        # sem-paper: The piece δω simply removes one distinguished half-edge from the orientation
+
+        G1 = copy(G)
+        sgn = (-1)**G.size()
+        image = []
+
+        # label all edges to determine sign later
+        Shared.enumerate_edges(G1)
+
+
+        n_epsilon = len(G.vertices()) - self.domain.n_vertices - self.domain.n - self.domain.n_omega
+        assert n_epsilon >= 0
+
+        for i in range(n_epsilon):
+            
+            omega_eps_cutoff = self.domain.n_vertices + self.domain.n + self.domain.n_omega
+
+            eps_index = omega_eps_cutoff + i
+            
+            # permute chosen epsilon vertex to the position where it becomes 
+            # an omega vertex due to the new partition in self.domain, since:
+            # self.target.n_omega = self.domain.n_omega + 1 
+            G2 = copy(G1)
+
+            print(eps_index)
+            relabeling_perm = list(range(omega_eps_cutoff)) + [eps_index] + list(range(omega_eps_cutoff+1, eps_index)) + list(range(eps_index+1, G1.order()))
+
+            assert set(relabeling_perm) == set(G2.vertices()), (omega_eps_cutoff, eps_index, relabeling_perm, G2.vertices())
+
+            G2.relabel(relabeling_perm)
+            
+            print(self)
+            print(self.domain.n_vertices)
+            print(self.domain.n)
+            print(self.domain.n_omega)
+
+            print(list(range(omega_eps_cutoff)))
+            print(len(G.vertices()))
+            print(G.vertices())
+
+            print(relabeling_perm)
+
+            sgn2 = sgn * Shared.shifted_edge_perm_sign(G2)
+
+            image.append((G2, sgn2))
+
+        return image
+
+
+    """
+    def operate_on(self, G):
+        # self is a WOHairyFinalGVS instance
         G1 = copy(G)
         sgn = (-1)**G.size()
         image = []
@@ -116,6 +171,7 @@ class EpsToOmegaGO(SymmetricGraphComplex.SymmetricGraphOperator):
             image.append((G2, sgn2))
 
         return image
+    """
 
     def restrict_to_isotypical_component(self, rep_index):
         return RestrictedEpsToOmegaGO(self, rep_index)
@@ -170,6 +226,8 @@ class EpsToOmegaD(GraphOperator.Differential):
         sub_type = self.sum_vector_space.sub_type
         s = "info_epstoomega_D_%s" % (graph_type)
         return os.path.join(Parameters.plots_dir, graph_type, sub_type, s)
+    
+
 
 
 class RestrictedEpsToOmegaD(SymmetricGraphComplex.SymmetricDifferential):
@@ -229,17 +287,8 @@ class ContractEdgesGO(SymmetricGraphComplex.SymmetricGraphOperator):
         return os.path.join(Parameters.ref_data_dir, graph_type, self.sub_type, s)
 
     def get_work_estimate(self):
-        # Returns as work estimate: domain.n_edges * domain_dim * log(target dimension, 2)
-        if not self.is_valid():
-            return 0
-        try:
-            (domain_dim, dimtarget_dim) = (
-                self.domain.get_dimension(), self.target.get_dimension())
-        except StoreLoad.FileNotFoundError:
-            return 0
-        if domain_dim == 0 or dimtarget_dim == 0:
-            return 0
-        return self.domain.n_edges * domain_dim * math.log(dimtarget_dim, 2)
+        # TODO
+        return 0
 
     def get_type(self):
         return 'contract edges'
@@ -496,33 +545,33 @@ class WOHairyGC(GraphComplex.GraphComplex):
         return '<%s graph complex with %s>' % (graph_type, str(self.sub_type))
 
     def print_dim_and_eulerchar(self):
-        for w in self.w_range:
-            for h in self.h_range:
-                for l in self.l_range:
-                    ds = [WOHairyFinalGVS(v, l, h, w).get_dimension()
-                          for v in self.v_range]
+        for n_omega in self.omega_range:
+            for n in self.n_range:
+                for genus in self.genus_range:
+                    ds = [WOHairyFinalGVS(genus=genus, n=n, n_omega=n_omega, degree=degree).get_dimension()
+                          for degree in self.degree_range]
                     eul = sum([(1 if j % 2 == 0 else -1) *
                               d for j, d in enumerate(ds)])
-                    print("Dimensions (w,h,l) ", w,
-                          h, l, ":", ds, "Euler", eul)
+                    print("Dimensions (n_omega,n,genus) ", n_omega,
+                          n, genus, ":", ds, "Euler", eul)
 
     def print_cohomology_dim(self):
-        for w in self.w_range:
-            for h in self.h_range:
-                for l in self.l_range:
+        for n_omega in self.omega_range:
+            for n in self.n_range:
+                for genus in self.genus_range:
                     cohomdict = {}
-                    for v in self.v_range:
-                        D1 = ContractEdgesGO.generate_operator(v, l, h, w)
-                        D2 = ContractEdgesGO.generate_operator(v+1, l, h, w)
+                    for degree in self.degree_range:
+                        D1 = ContractEdgesGO.generate_operator(degree, genus, n, n_omega)
+                        D2 = ContractEdgesGO.generate_operator(degree+1, genus, n, n_omega)
                         try:
-                            d = WOHairyFinalGVS(v, l, h, w).get_dimension()
+                            d = WOHairyFinalGVS(genus=genus, n=n, n_omega=n_omega, degree=degree).get_dimension()
                             r1 = D1.get_matrix_rank()
                             r2 = D2.get_matrix_rank()
-                            cohomdict[v] = d-r1-r2
+                            cohomdict[degree] = d-r1-r2
                         except:
                             pass
 
-                    print("Cohomology Dimensions (w,h,l) ",
-                          w, h, l, ":", cohomdict)
+                    print("Cohomology Dimensions (w,n,genus) ",
+                          n_omega, n, genus, ":", cohomdict)
 
 

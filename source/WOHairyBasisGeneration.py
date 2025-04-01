@@ -35,9 +35,6 @@ import OrdinaryGraphComplex
 import math
 import GraphVectorSpace
 import matplotlib.pyplot as plt
-import GCDimensions
-
-
 
 
 # ------- Graph Vector Space --------
@@ -57,9 +54,15 @@ class WOHairyComponentGVS(CHairyGraphComplex.CHairyGraphVS):
         if self.n_vertices > 0: self.n_edges = self.n_loops + self.n_vertices - 1 # case of no double-leg
         else: self.n_edges = 0 # case of double-leg
 
-        # corresponding ogvs for perm_sign method
-        self.ogvs = OrdinaryGraphComplex.OrdinaryGVS(self.n_vertices + self.n_hairs, self.n_loops, even_edges=False)
 
+    def get_n_epsilon_from_graph(self, G):
+
+        n_epsilon = len(G.vertices()) - self.n_vertices - self.n - self.n_omega
+
+        assert isinstance(n_epsilon, int)
+        assert n_epsilon >= 0
+
+        return n_epsilon
 
 
     def __hash__(self):
@@ -130,16 +133,30 @@ class WOHairyComponentGVS(CHairyGraphComplex.CHairyGraphVS):
         return (G.relabel(p, inplace=False) for G in hairy_graphs for p in all_perm)
 
 
-
+    
     def perm_sign(self, G, p):
-        # The sign is the same as the corresponding sign in the
-        # ordinary graph complex, apart from an extra contribution from the omega-hair-vertices.
+        
+        #inputs:
+        #    G: sage-graph with vertices labled [0, ..., n-1] 
+        #    p: permutation of the vertices given by a list [p(0), ..., p(n-1)]
+        #output: sign of the permutation induced on the edges of the Graph G
+        
+        assert set(G.vertices()) == set(p)
+        
+        #print("vertex-permutation: ", p)
 
-        sgn = self.ogvs.perm_sign(G, p)
-
+        G1 = copy(G)
+        Shared.enumerate_edges(G1)
+        # We permute the graph, and read of the new labels
+        G1.relabel(p, inplace=True)
+        sgn = Shared.Perm([j for (u, v, j) in G1.edges(sort=True)]).signature()
+        
+        # Compute the extra contribution from omega-hairs.
         if self.n_omega > 0:
             omega_hairs = p[self.n_vertices + self.n : self.n_vertices + self.n + self.n_omega]
+            #print("omega_hairs: ", omega_hairs)
             sgn_omega_perm = Shared.Perm.shifted(omega_hairs).signature()
+            #print("sign of induced omega permutation: ", sgn_omega_perm)
             sgn *= sgn_omega_perm
 
         return sgn
@@ -220,7 +237,7 @@ def multiset_permutations(n_vertices, n, n_omega, n_epsilon):
 
 class WOHairyAggregatedGVS(WOHairyComponentGVS):
 
-    def __init__(self, n_components, n_vertices, genus, n, n_omega, n_epsilon, n_double_legs, do_print=False):
+    def __init__(self, n_components, n_vertices, genus, n, n_omega, n_epsilon, n_double_legs):
 
         self.n_components = n_components
         self.n = n
@@ -242,21 +259,6 @@ class WOHairyAggregatedGVS(WOHairyComponentGVS):
         # loop-order of the inner graph
         self.n_loops = self.n_edges - n_vertices + (self.n_components - self.n_double_legs)
 
-        # corresponding ogvs for perm_sign method
-        self.ogvs = OrdinaryGraphComplex.OrdinaryGVS(self.n_vertices + self.n_hairs, self.n_loops, even_edges=False)
-
-        if do_print:
-            print("intializing WOHairyAggregatedGVS with params: -------")
-            print("n_components: ", n_components)
-            print("n_vertices: ", n_vertices)
-            print("genus: ", genus)
-            print("n: ", n)
-            print("n_omega: ", n_omega)
-            print("n_epsilon: ", n_epsilon)
-            print("n_double_legs: ", n_double_legs)
-            print("n_edges: ", self.n_edges)
-            print("n_loops:", self.n_loops)
-            print("is_valid: ", str(self.is_valid()))
 
 
     def cohom_degree(self):
@@ -616,7 +618,7 @@ def reorder_vertices(old_order, n_vert_1, n_vert_2, n_1, n_2, n_omega_1, n_omega
 
 
 
-class WOHairyFinalGVS(GraphVectorSpace.GraphVectorSpace):
+class WOHairyFinalGVS(WOHairyAggregatedGVS):
 
     def __init__(self, genus, n, n_omega, degree):
 
@@ -656,8 +658,7 @@ class WOHairyFinalGVS(GraphVectorSpace.GraphVectorSpace):
                                          n=self.n,
                                          n_omega=self.n_omega,
                                          n_epsilon=n_epsilon,
-                                         n_double_legs=0,
-                                         do_print=False)
+                                         n_double_legs=0)
         
         return V.get_partition()
 
@@ -667,8 +668,7 @@ class WOHairyFinalGVS(GraphVectorSpace.GraphVectorSpace):
         
         GG = Graph(G)  
 
-        n_epsilon = len(GG.vertices()) - self.n_vertices - self.n - self.n_omega
-        assert n_epsilon >= 0
+        n_epsilon = self.get_n_epsilon_from_graph(G)
         
         partition = self.get_partition(n_epsilon)
 
@@ -733,23 +733,11 @@ class WOHairyFinalGVS(GraphVectorSpace.GraphVectorSpace):
                                          n=self.n,
                                          n_omega=self.n_omega,
                                          n_epsilon=n_epsilon,
-                                         n_double_legs=n_double_legs,
-                                         do_print=False) 
+                                         n_double_legs=n_double_legs) 
 
                     assert V.cohom_degree() == self.degree
 
                     if V.is_valid():
-                        
-                        """
-                        print("valid-configuration: -----")
-                        print("n_components", n_components)
-                        print("n_vertices", self.n_vertices)
-                        print("genus", self.genus)
-                        print("n", self.n)
-                        print("n_omega", self.n_omega)
-                        print("n_epsilon", n_epsilon)
-                        print("n_double_legs", n_double_legs)
-                        """
                         
                         V.build_basis(ignore_existing_files=False)
 
@@ -791,8 +779,8 @@ class WOHairyFinalGVS(GraphVectorSpace.GraphVectorSpace):
         # for G in tqdm(generating_list, desc=desc, disable=(not progress_bar)):
         for G in generating_list:
 
-            n_epsilon = len(G.vertices()) - self.n_vertices - self.n - self.n_omega
-            assert n_epsilon >= 0
+            n_epsilon = self.get_n_epsilon_from_graph(G)
+            assert isinstance(n_epsilon, int)
 
             # For each graph G in the generating list, add the canonical labeled graph6 representation to the basis set
             # if the graph G doesn't have odd automormphisms.
@@ -817,9 +805,44 @@ class WOHairyFinalGVS(GraphVectorSpace.GraphVectorSpace):
         self._store_basis_g6(L)
 
 
+    # modified graph_to_canon_g6 from GraphVectorSpace class, since we also need to pass n_epsilon to the partition.
+    def graph_to_canon_g6(self, graph):
+        """Return the graph6 string of the canonically labeled graph and the corresponding permutation sign.
+
+        Labels the sage Graph graph canonically using the sage method for canonical labelling and respecting the
+        partition of the vertices.
+
+        :param graph: Graph to be canonically labeled.
+        :type graph: Graph
+        :return: Tuple containing the graph6 string of the canonically labeled graph and the
+            corresponding permutation sign.
+        :rtype: tuple(str, int)
+        """
+        # print("graph_to_canon_g6", graph.graph6_string(), self.get_partition())
+        # graph = copy(graph)
+        # graph = Graph(graph.graph6_string())
+
+        n_epsilon = self.get_n_epsilon_from_graph(graph)
+        assert isinstance(n_epsilon, int)
+
+        canonG, perm_dict = graph.canonical_label(
+            partition=self.get_partition(n_epsilon), certificate=True,
+            algorithm=Parameters.canonical_label_algorithm)
+        
+        sgn = self.perm_sign(graph, [perm_dict[j]
+                             for j in range(graph.order())])
+        assert sgn in {1, -1}
+
+        return (canonG.graph6_string(), sgn)
+
+
     def get_work_estimate(self):
         # TODO
         return 0
+    
+    
+    
+
         
 
 
