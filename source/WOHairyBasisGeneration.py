@@ -55,16 +55,6 @@ class WOHairyComponentGVS(CHairyGraphComplex.CHairyGraphVS):
         else: self.n_edges = 0 # case of double-leg
 
 
-    def get_n_epsilon_from_graph(self, G):
-
-        n_epsilon = len(G.vertices()) - self.n_vertices - self.n - self.n_omega
-
-        assert isinstance(n_epsilon, int)
-        assert n_epsilon >= 0
-
-        return n_epsilon
-
-
     def __hash__(self):
         return hash("wo_comp_gra%d_%d_%d_%d_%d" % self.get_ordered_param_dict().get_value_tuple())
 
@@ -629,6 +619,16 @@ class WOHairyFinalGVS(WOHairyAggregatedGVS):
         
         self.n_vertices = degree - 22 + n_omega - genus + 1
         self.excess = 3*genus + 2*n - 25 
+
+    
+    def get_n_epsilon_from_graph(self, G):
+
+        n_epsilon = len(G.vertices()) - self.n_vertices - self.n - self.n_omega
+
+        assert isinstance(n_epsilon, int)
+        assert n_epsilon >= 0
+
+        return n_epsilon
 
 
     def __hash__(self):

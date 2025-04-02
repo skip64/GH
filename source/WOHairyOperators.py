@@ -81,30 +81,25 @@ class EpsToOmegaGO(SymmetricGraphComplex.SymmetricGraphOperator):
         s = "epstowD%d_%d_%d_%d_rank.txt" % self.domain.get_ordered_param_dict().get_value_tuple()
         return os.path.join(Parameters.data_dir, graph_type, s)
 
-
-    def get_work_estimate(self):
-        return 0
-
     def get_type(self):
         return 'contract edges'
 
 
-    # TODO
+    # TODO: check implementation of sign!
     def operate_on(self, G):
         # self.domain is a WOHairyFinalGVS instance
         # replaces one epsilon vertex with an omega vertex
         # sem-paper: The piece δω simply removes one distinguished half-edge from the orientation
 
+        n_epsilon = len(G.vertices()) - self.domain.n_vertices - self.domain.n - self.domain.n_omega
+        assert n_epsilon >= 0
+
         G1 = copy(G)
-        sgn = (-1)**G.size()
+        sgn = (-1)**(G.size() - n_epsilon + 1)
         image = []
 
         # label all edges to determine sign later
         Shared.enumerate_edges(G1)
-
-
-        n_epsilon = len(G.vertices()) - self.domain.n_vertices - self.domain.n - self.domain.n_omega
-        assert n_epsilon >= 0
 
         for i in range(n_epsilon):
             
@@ -115,27 +110,16 @@ class EpsToOmegaGO(SymmetricGraphComplex.SymmetricGraphOperator):
             # permute chosen epsilon vertex to the position where it becomes 
             # an omega vertex due to the new partition in self.domain, since:
             # self.target.n_omega = self.domain.n_omega + 1 
+            
             G2 = copy(G1)
 
-            print(eps_index)
-            relabeling_perm = list(range(omega_eps_cutoff)) + [eps_index] + list(range(omega_eps_cutoff+1, eps_index)) + list(range(eps_index+1, G1.order()))
+            relabeling_perm = list(range(omega_eps_cutoff)) + [eps_index] + list(range(omega_eps_cutoff, eps_index)) + list(range(eps_index+1, G1.order()))
 
-            assert set(relabeling_perm) == set(G2.vertices()), (omega_eps_cutoff, eps_index, relabeling_perm, G2.vertices())
+            assert set(relabeling_perm) == set(G2.vertices())
 
             G2.relabel(relabeling_perm)
-            
-            print(self)
-            print(self.domain.n_vertices)
-            print(self.domain.n)
-            print(self.domain.n_omega)
 
-            print(list(range(omega_eps_cutoff)))
-            print(len(G.vertices()))
-            print(G.vertices())
-
-            print(relabeling_perm)
-
-            sgn2 = sgn * Shared.shifted_edge_perm_sign(G2)
+            sgn2 = sgn * Shared.shifted_edge_perm_sign2(G2)
 
             image.append((G2, sgn2))
 
@@ -172,6 +156,9 @@ class EpsToOmegaGO(SymmetricGraphComplex.SymmetricGraphOperator):
 
         return image
     """
+
+    def get_work_estimate(self):
+        return 0
 
     def restrict_to_isotypical_component(self, rep_index):
         return RestrictedEpsToOmegaGO(self, rep_index)
@@ -272,28 +259,142 @@ class ContractEdgesGO(SymmetricGraphComplex.SymmetricGraphOperator):
 
     def get_matrix_file_path(self):
         s = "contractD%d_%d_%d_%d.txt" % self.domain.get_ordered_param_dict().get_value_tuple()
-        return os.path.join(Parameters.data_dir, graph_type, self.sub_type, s)
+        return os.path.join(Parameters.data_dir, graph_type, s)
 
     def get_rank_file_path(self):
         s = "contractD%d_%d_%d_%d_rank.txt" % self.domain.get_ordered_param_dict().get_value_tuple()
-        return os.path.join(Parameters.data_dir, graph_type, self.sub_type, s)
+        return os.path.join(Parameters.data_dir, graph_type, s)
 
     def get_ref_matrix_file_path(self):
         s = "contractD%d_%d_%d_%d.txt" % self.domain.get_ordered_param_dict().get_value_tuple()
-        return os.path.join(Parameters.ref_data_dir, graph_type, self.sub_type, s)
+        return os.path.join(Parameters.ref_data_dir, graph_type, s)
 
     def get_ref_rank_file_path(self):
         s = "contractD%d_%d_%d_%d.txt.rank.txt" % self.domain.get_ordered_param_dict().get_value_tuple()
-        return os.path.join(Parameters.ref_data_dir, graph_type, self.sub_type, s)
-
-    def get_work_estimate(self):
-        # TODO
-        return 0
+        return os.path.join(Parameters.ref_data_dir, graph_type, s)
 
     def get_type(self):
         return 'contract edges'
 
-    # TODO
+    # TODO:
+    # - Assert excess-compatability / degree-compatability etc after the operation
+    def operate_on(self, G):
+
+        n_old_eps = self.domain.get_n_epsilon_from_graph(G)
+
+        # Operates on the graph G by contracting an edge and unifying the adjacent vertices.
+        image = []
+        for (i, e) in enumerate(G.edges(labels=False,sort=True)):
+            (u, v) = e
+
+            # ensure u<v (this should be always true anyway actually)
+            assert u < v
+
+            # only edges connected to at least one internal vertex, and not connected to a numbered hair-vertex can be contracted
+
+            # both u and v are not internal vertices
+            if u >= self.domain.n_vertices: continue
+
+            # u or v are numbered vertices        
+            if u >= self.domain.n_vertices and u < self.domain.n_vertices + self.domain.n: continue
+            if v >= self.domain.n_vertices and v < self.domain.n_vertices + self.domain.n: continue
+        
+
+            sgn = 1 if i % 2 == 0 else -1
+            # print("sgn0",sgn)
+            previous_size = G.size()
+
+            # print("sgn1",sgn)
+            G1 = copy(G)
+            # label all edges to determine sign later
+            Shared.enumerate_edges(G1)
+
+
+            # contracting the edge (u,v)
+            # we always delete the lower index vertex. This ensures that the extra vertices are never deleted
+
+            # if both u and v are internal vertices
+            if v < self.domain.n_vertices:
+
+                # contract edge by merging vertices
+                G1.merge_vertices([v, u])
+
+                # if we have too few edges some double edges have been created => zero
+                if (previous_size - G1.size()) > 1: continue
+
+                # relabel vertices
+                G1.relabel(range(len(G1.vertices())), inplace=True)
+                
+                # find edge permutation sign
+                sgn *= Shared.shifted_edge_perm_sign2(G1)
+                # print("sgn3_",sgn)
+                image.append((G1, sgn))
+                # image.append((Graph(G1.graph6_string()), sgn))
+                # print("hmm0:", G.graph6_string(), G1.graph6_string())
+
+
+            # if u is an internal vertex and v is a omega-vertex
+            # the second vertex is now an omega-vertex, so we need to merge the vertex with the eps vertex
+            # after reconnecting one of the edges to omega
+            # we assume that u != eps, because eps-omega-edges cannot be contracted
+            elif u < self.domain.n_vertices \
+                and v >= self.domain.n_vertices + self.domain.n \
+                and v < self.domain.n_vertices + self.domain.n + self.domain.n_omega:
+
+                G1.delete_edge(u, v)
+
+                # loop over neighbors w of u to be connected to omega
+                # TODO: Question: if we delete all edges adjacent to u, 
+                #       will it not just be an isolated vertex?
+                for w in G1.neighbors(u):
+                    G2 = copy(G1)
+                    sgn2 = sgn
+
+                    # reconnect the w-v-edge to omega (i.e., to v)
+                    old_label = G2.edge_label(u, w)
+                    G2.delete_edge(u, w)
+                    G2.add_edge(w, v, old_label)
+
+                    # we now need to split u into separate epsilon-vertices
+                    # for each remaining adjecent vertex s of u
+                    n_new_eps = len(G2.neighbors(u))
+                    for (j, s) in enumerate(G2.neighbors(u)): 
+                        G2.delete_edge(u, s)
+
+                        assert set(G2.vertices()) == set(range(len(G2.vertices())))
+                        # since we add the new vertex at the end, it automatcally corresponds to epsilon
+                        new_vertex_label = len(G2.vertices()) 
+
+                        old_size = G2.order()
+                        #print(G2.vertices())
+                        G2.add_vertex(new_vertex_label)
+                        assert G2.order() == old_size + 1, (G2.order(), old_size)
+
+                        label = 0 #TODO!
+                        G2.add_edge(new_vertex_label, s, label)
+
+                    G2.delete_vertex(u)
+                        
+
+                    # in case we have too few edges some double edges have been created => zero
+                    if (previous_size - G2.size()) > 1: continue
+
+                    G2.relabel(range(len(G2.vertices())), inplace=True)
+                    # find edge permutation sign
+                    sgn2 *= Shared.shifted_edge_perm_sign2(G2)
+
+                    # sanity checks
+                    n_eps_in_target = self.target.get_n_epsilon_from_graph(G2)
+                    assert n_eps_in_target == n_old_eps + n_new_eps
+                    assert G2.order() == self.target.n_vertices + self.target.n + self.target.n_omega + n_eps_in_target
+
+
+                    image.append((G2, sgn2))
+
+
+        return image
+    
+    """
     def operate_on(self, G):
         # print("operate on:", G.graph6_string(),
             #   self.domain.get_ordered_param_dict())
@@ -389,6 +490,12 @@ class ContractEdgesGO(SymmetricGraphComplex.SymmetricGraphOperator):
                     image.append((G2, sgn2))
 
         return image
+    """
+    
+    
+    def get_work_estimate(self):
+        # TODO
+        return 0
 
     def restrict_to_isotypical_component(self, rep_index):
         return RestrictedContractEdgesGO(self, rep_index)
@@ -555,6 +662,7 @@ class WOHairyGC(GraphComplex.GraphComplex):
                     print("Dimensions (n_omega,n,genus) ", n_omega,
                           n, genus, ":", ds, "Euler", eul)
 
+    # TODO: Insert contribution from EpsToOmegaGo
     def print_cohomology_dim(self):
         for n_omega in self.omega_range:
             for n in self.n_range:

@@ -290,7 +290,6 @@ class TestEulerCharcteristic(unittest.TestCase):
 
         # excess = 4
         self.test_euler_char(9, 1, coefficients=[1], diagrams=[[1]], excess=4)
-        """
         self.test_euler_char(7, 4, coefficients=[2, -2], diagrams=[[2,2], [3,1]], excess=4)
 
 
@@ -318,7 +317,7 @@ class TestEulerCharcteristic(unittest.TestCase):
 
         # excess = 10
         self.test_euler_char(11, 1, coefficients=[1], diagrams=[[1]], excess=10)
-        """
+        
 
 
 
