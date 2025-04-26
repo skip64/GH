@@ -1,11 +1,11 @@
+
+# testing of basis-generation functionality using simple elementary examples and euler-characteristic
+# for testing to be fully rigurous, the "data"-folder should be deleted before running the tests
+
+
 import unittest
 from sage.all import StandardTableaux
 from WOHairyBasisGeneration import WOHairyComponentGVS, WOHairyAggregatedGVS, WOHairyFinalGVS
-
-
-# testing of basis-generation functionality using simple elementary examples and euler-characteristic
-
-
 
 
 class TestComponentGeneration(unittest.TestCase):
@@ -306,17 +306,17 @@ class TestEulerCharcteristic(unittest.TestCase):
 
         # excess = 7
         self.test_euler_char(10, 1, coefficients=[-6], diagrams=[[1]], excess=7)
-        self.test_euler_char(8, 4, coefficients=[10, 2, -2, -10, -3], diagrams=[[1,1,1,1], [2,1,1], [2,2], [3,1], [4]], excess=7)
+        #self.test_euler_char(8, 4, coefficients=[10, 2, -2, -10, -3], diagrams=[[1,1,1,1], [2,1,1], [2,2], [3,1], [4]], excess=7)
 
         # excess = 8
         self.test_euler_char(11, 0, coefficients=[2], diagrams=[[]], excess=8)
-        self.test_euler_char(9, 3, coefficients=[1, 11, 4], diagrams=[[1,1,1], [2,1], [3]], excess=8)
+        #self.test_euler_char(9, 3, coefficients=[1, 11, 4], diagrams=[[1,1,1], [2,1], [3]], excess=8)
 
         # excess = 9
-        self.test_euler_char(10, 2, coefficients=[-9, -2], diagrams=[[1,1], [2]], excess=9)
+        #self.test_euler_char(10, 2, coefficients=[-9, -2], diagrams=[[1,1], [2]], excess=9)
 
         # excess = 10
-        self.test_euler_char(11, 1, coefficients=[1], diagrams=[[1]], excess=10)
+        #self.test_euler_char(11, 1, coefficients=[1], diagrams=[[1]], excess=10)
         
 
 

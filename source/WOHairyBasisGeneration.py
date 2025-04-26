@@ -620,7 +620,15 @@ class WOHairyFinalGVS(WOHairyAggregatedGVS):
         self.n_vertices = degree - 22 + n_omega - genus + 1
         self.excess = 3*genus + 2*n - 25 
 
+    def get_type(self):
+        return 'wohairy'
     
+    def __eq__(self, other):
+        return self.genus == other.genus \
+                and self.n == other.n \
+                and self.n_omega == other.n_omega \
+                and self.degree == other.degree
+
     def get_n_epsilon_from_graph(self, G):
 
         n_epsilon = len(G.vertices()) - self.n_vertices - self.n - self.n_omega

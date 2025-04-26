@@ -82,20 +82,45 @@ class EpsToOmegaGO(SymmetricGraphComplex.SymmetricGraphOperator):
         return os.path.join(Parameters.data_dir, graph_type, s)
 
     def get_type(self):
-        return 'contract edges'
+        return 'eps to omega'
 
 
     # TODO: check implementation of sign!
     def operate_on(self, G):
-        # self.domain is a WOHairyFinalGVS instance
-        # replaces one epsilon vertex with an omega vertex
-        # sem-paper: The piece δω simply removes one distinguished half-edge from the orientation
+        """
+        This is the "dual" operator to the delta_omega operator defined in https://arxiv.org/pdf/2407.16372 on page 4 
+        which changes one omega vertex to an epsilon vertex.
+
+        it operates on the graph G by:
+        - for each epsilon vertex: replace it with an omega vertex and append the new graph to the image list
+        - return the image list
+
+        where replacing the epsilon with an omega vertex works as follows:
+        - choose an epsilon vertex
+        - note that the first epsilon vertex becomes an omega vertex since target.n_omega = domain.n_omega + 1
+        - hence we simply swap the label of the chosen epsilon vertex with the label of the first epsilon vertex
+        - the sign is given by the sign of the edge-permutation induced by the relabelling of the vertices
+        - note that we do not need to additionaly consider the permutation of the omega-labels, since these are left in place by construction!
+
+        EXAMPLE: "2x omaga & 5x epsilon attached to a single vertex"
+        notation: "0(i)":
+        - "i" denotes the "physical" vertex in the graph
+        - "0" denotes the corresponding vertex-label
+        1.  G1.vertices():  0(i), 1(o1), 2(o2), 3(e1), 4(e2), 5(e3), 6(e4), 7(e5)
+        2.  eps_index = 5 -> eps_vertex e3
+        3.  we now want to swap vertex e3 with e1: 
+            relabeling_perm: [0, 1, 2, 5, 4, 3, 6, 7] 
+            G2.vertices():  0(i), 1(o1), 2(o2), 3(e3), 4(e2), 5(e1), 6(e4), 7(e5)
+        4.  Now, since each hair-vertex (o1, o2, e1, e2, e3, e4, e5) corresponds to exactly one edge (the hair),
+            the induced edge permutation is simply a swap of (i-e3) with (i-e1)
+            -> sign = -1
+        """
 
         n_epsilon = len(G.vertices()) - self.domain.n_vertices - self.domain.n - self.domain.n_omega
         assert n_epsilon >= 0
 
         G1 = copy(G)
-        sgn = (-1)**(G.size() - n_epsilon + 1)
+        sgn = 1
         image = []
 
         # label all edges to determine sign later
@@ -104,64 +129,32 @@ class EpsToOmegaGO(SymmetricGraphComplex.SymmetricGraphOperator):
         for i in range(n_epsilon):
             
             omega_eps_cutoff = self.domain.n_vertices + self.domain.n + self.domain.n_omega
-
             eps_index = omega_eps_cutoff + i
             
-            # permute chosen epsilon vertex to the position where it becomes 
-            # an omega vertex due to the new partition in self.domain, since:
-            # self.target.n_omega = self.domain.n_omega + 1 
-            
+            # permute chosen epsilon vertex to the position where it becomes an omega vertex due to the new partition in self.domain
+            # if i == 0: then omega_eps_cutoff == eps_index
             G2 = copy(G1)
+            if i > 0:
+                # relabeling_perm swaps omega_eps_cutoff and eps_index
+                relabeling_perm = list(range(omega_eps_cutoff)) + [eps_index] + list(range(omega_eps_cutoff+1, eps_index)) + [omega_eps_cutoff] + list(range(eps_index+1, G1.order()))
+                #print(relabeling_perm)
+                assert set(relabeling_perm) == set(G2.vertices())
+                G2.relabel(relabeling_perm)
 
-            relabeling_perm = list(range(omega_eps_cutoff)) + [eps_index] + list(range(omega_eps_cutoff, eps_index)) + list(range(eps_index+1, G1.order()))
-
-            assert set(relabeling_perm) == set(G2.vertices())
-
-            G2.relabel(relabeling_perm)
-
-            sgn2 = sgn * Shared.shifted_edge_perm_sign2(G2)
-
-            image.append((G2, sgn2))
+            # sign equals the perm_sign of the edge-permutation induced by the relabeling of the vertices
+            sgn = Shared.shifted_edge_perm_sign2(G2)
+            #print("sgn: ", sgn)
+            image.append((G2, sgn))
 
         return image
 
-
-    """
-    def operate_on(self, G):
-        # self is a WOHairyFinalGVS instance
-        G1 = copy(G)
-        sgn = (-1)**G.size()
-        image = []
-
-        # label all edges to determine sign later
-        Shared.enumerate_edges(G1)
-
-        # add one new omega vertex in position n_vertices +1
-        G1.relabel(list(range(self.domain.n_vertices+1)) + list(range(self.domain.n_vertices +
-                   2, self.domain.n_vertices+self.domain.n_ws+self.domain.n_hairs+2)))
-        G1.add_vertex(self.domain.n_vertices+1)
-
-        # reconnect one eps edge to the new vertex
-        eps = self.domain.n_vertices
-        new_w = self.domain.n_vertices+1
-        # in my case we go through all epsilon vertices instead. (may be empty)
-        for v in G1.neighbors(eps):
-            sgn2 = sgn
-            G2 = copy(G1)
-            old_label = G2.edge_label(v, eps)
-            G2.delete_edge(v, eps)
-            G2.add_edge(v, new_w, old_label)
-            sgn2 *= Shared.shifted_edge_perm_sign2(G2)
-            image.append((G2, sgn2))
-
-        return image
-    """
 
     def get_work_estimate(self):
         return 0
 
     def restrict_to_isotypical_component(self, rep_index):
         return RestrictedEpsToOmegaGO(self, rep_index)
+
 
 
 class RestrictedEpsToOmegaGO(SymmetricGraphComplex.SymmetricRestrictedOperatorMatrix):
@@ -185,13 +178,12 @@ class RestrictedEpsToOmegaGO(SymmetricGraphComplex.SymmetricRestrictedOperatorMa
 
 
 class EpsToOmegaD(GraphOperator.Differential):
-    """Contract edges differential."""
 
     def __init__(self, sum_vector_space):
-        """Initialize the contract edges differential with the underlying sum vector space.
+        """Initialize the eps to omega differential with the underlying sum vector space.
 
         :param sum_vector_space: Underlying vector space.
-        :type sum_vector_space: HairyGraphSumVS
+        :type sum_vector_space: 
         """
         super(EpsToOmegaD, self).__init__(sum_vector_space,
                                           EpsToOmegaGO.generate_op_matrix_list(sum_vector_space))
@@ -277,15 +269,16 @@ class ContractEdgesGO(SymmetricGraphComplex.SymmetricGraphOperator):
         return 'contract edges'
 
     # TODO:
-    # - Assert excess-compatability / degree-compatability etc after the operation
+    # sign!
     def operate_on(self, G):
 
         n_old_eps = self.domain.get_n_epsilon_from_graph(G)
 
         # Operates on the graph G by contracting an edge and unifying the adjacent vertices.
         image = []
-        for (i, e) in enumerate(G.edges(labels=False,sort=True)):
+        for (i, e) in enumerate(G.edges(labels=False, sort=True)):
             (u, v) = e
+            sgn = (-1)**i
 
             # ensure u<v (this should be always true anyway actually)
             assert u < v
@@ -299,8 +292,6 @@ class ContractEdgesGO(SymmetricGraphComplex.SymmetricGraphOperator):
             if u >= self.domain.n_vertices and u < self.domain.n_vertices + self.domain.n: continue
             if v >= self.domain.n_vertices and v < self.domain.n_vertices + self.domain.n: continue
         
-
-            sgn = 1 if i % 2 == 0 else -1
             # print("sgn0",sgn)
             previous_size = G.size()
 
@@ -315,6 +306,7 @@ class ContractEdgesGO(SymmetricGraphComplex.SymmetricGraphOperator):
 
             # if both u and v are internal vertices
             if v < self.domain.n_vertices:
+                assert u < self.domain.n_vertices
 
                 # contract edge by merging vertices
                 G1.merge_vertices([v, u])
@@ -344,8 +336,6 @@ class ContractEdgesGO(SymmetricGraphComplex.SymmetricGraphOperator):
                 G1.delete_edge(u, v)
 
                 # loop over neighbors w of u to be connected to omega
-                # TODO: Question: if we delete all edges adjacent to u, 
-                #       will it not just be an isolated vertex?
                 for w in G1.neighbors(u):
                     G2 = copy(G1)
                     sgn2 = sgn
@@ -361,8 +351,9 @@ class ContractEdgesGO(SymmetricGraphComplex.SymmetricGraphOperator):
                     for (j, s) in enumerate(G2.neighbors(u)): 
                         G2.delete_edge(u, s)
 
-                        assert set(G2.vertices()) == set(range(len(G2.vertices())))
+                        # add new epsilon-vertex
                         # since we add the new vertex at the end, it automatcally corresponds to epsilon
+                        assert set(G2.vertices()) == set(range(len(G2.vertices())))
                         new_vertex_label = len(G2.vertices()) 
 
                         old_size = G2.order()
@@ -387,7 +378,6 @@ class ContractEdgesGO(SymmetricGraphComplex.SymmetricGraphOperator):
                     n_eps_in_target = self.target.get_n_epsilon_from_graph(G2)
                     assert n_eps_in_target == n_old_eps + n_new_eps
                     assert G2.order() == self.target.n_vertices + self.target.n + self.target.n_omega + n_eps_in_target
-
 
                     image.append((G2, sgn2))
 
@@ -621,9 +611,7 @@ class WOHairyGC(GraphComplex.GraphComplex):
     """
 
     def __init__(self, genus_range, n_range, omega_range, degree_range, differentials):
-        """Initialize the graph complex.
-
-        """
+        """Initialize the graph complex."""
         self.genus_range = genus_range
         self.n_range = n_range
         self.omega_range = omega_range
@@ -631,19 +619,25 @@ class WOHairyGC(GraphComplex.GraphComplex):
 
         sum_vector_space = WOHairyGraphSumVS(
             self.genus_range, self.n_range, self.omega_range, self.degree_range)
+        
         differential_list = []
+
         if not set(differentials).issubset(['contract', 'contract_iso', 'epstoomega', 'epstoomega_iso']):
             raise ValueError(
                 "Differentials for hairy graph complex: 'contract'")
+        
         contract_edges_dif = ContractEdgesD(sum_vector_space)
         epstoomega_dif = EpsToOmegaD(sum_vector_space)
+
         if 'contract' in differentials:
             differential_list.append(contract_edges_dif)
+
         if 'contract_iso' in differentials:
             contract_iso_edges_dif = RestrictedContractEdgesD(
                 contract_edges_dif)
             differential_list.append(contract_iso_edges_dif)
             print("Attention: contract_iso operates on nonzero cohomology entries only, so they need to be computed before!")
+
         if 'epstoomega' in differentials:
             differential_list.append(epstoomega_dif)
         super(WOHairyGC, self).__init__(sum_vector_space, differential_list)
