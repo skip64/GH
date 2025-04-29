@@ -161,7 +161,7 @@ def operate_on_ContractEdges(G, n_vertices, n, n_omega, n_epsilon):
         # we always delete the lower index vertex. This ensures that the extra vertices are never deleted
 
         # if both u and v are internal vertices
-        if False and v < n_vertices:
+        if v < n_vertices:
             
             print("CASE: inner_vertex - inner_vertex")
 
@@ -188,7 +188,7 @@ def operate_on_ContractEdges(G, n_vertices, n, n_omega, n_epsilon):
 
 
         # if u is an internal vertex and v is an epsilon-vertex
-        elif False and u < n_vertices \
+        elif u < n_vertices \
             and v >= n_vertices + n + n_omega:
             
             print("CASE: inner_vertex - epsilon")
@@ -291,150 +291,7 @@ def operate_on_ContractEdges(G, n_vertices, n, n_omega, n_epsilon):
 
     return image
 
-"""
-def operate_on_ContractEdges(G, n_vertices, n, n_omega, n_epsilon):
 
-    n_old_eps = n_epsilon
-
-    # Operates on the graph G by contracting an edge and unifying the adjacent vertices.
-    image = []
-    for (i, e) in enumerate(G.edges(labels=False, sort=True)):
-
-        print("contracting edge (u,v) =", e)
-        
-        (u, v) = e
-        sgn = (-1)**i
-
-        # ensure u<v (this should be always true anyway actually)
-        assert u < v
-
-        # only edges connected to at least one internal vertex, and not connected to a numbered hair-vertex can be contracted
-
-        # both u and v are not internal vertices
-        if u >= n_vertices: continue
-
-        # u or v are numbered vertices        
-        if u >= n_vertices and u < n_vertices + n: continue
-        if v >= n_vertices and v < n_vertices + n: continue
-    
-        # print("sgn0",sgn)
-        previous_size = G.size()
-
-        # print("sgn1",sgn)
-        G1 = copy(G)
-        # label all edges to determine sign later
-        Shared.enumerate_edges(G1)
-        print("intial state: ###########")
-        print("vertices: ", G1.vertices())
-        print("edges: ", G1.edges())
-
-
-        # contracting the edge (u,v)
-        # we always delete the lower index vertex. This ensures that the extra vertices are never deleted
-
-        # if both u and v are internal vertices
-        if v < n_vertices:
-            assert u < n_vertices
-
-            # contract edge by merging vertices
-            G1.merge_vertices([v, u])
-
-            # if we have too few edges some double edges have been created => zero
-            if (previous_size - G1.size()) > 1: continue
-
-            # relabel vertices
-            G1.relabel(range(len(G1.vertices())), inplace=True)
-            
-            # find edge permutation sign
-            sgn *= Shared.shifted_edge_perm_sign2(G1)
-            # print("sgn3_",sgn)
-            print("adding to image ---")
-            print("vertices: ", G1.vertices())
-            print("edges: ", G1.edges())
-            image.append((G1, sgn))
-            # image.append((Graph(G1.graph6_string()), sgn))
-            # print("hmm0:", G.graph6_string(), G1.graph6_string())
-
-
-        # if u is an internal vertex and v is a omega-vertex
-        # the second vertex is now an omega-vertex, so we need to merge the vertex with the eps vertex
-        # after reconnecting one of the edges to omega
-        # we assume that u != eps, because eps-omega-edges cannot be contracted
-        elif u < n_vertices \
-            and v >= n_vertices + n \
-            and v < n_vertices + n + n_omega:
-            
-            u_v_label = G1.edge_label(u, v)
-            G1.delete_edge(u, v)
-            print("state after deleting u_v:")
-            print("vertices: ", G1.vertices())
-            print("edges: ", G1.edges())
-
-            # loop over neighbors w of u to be connected to omega
-            for w in G1.neighbors(u):
-
-                print("picking neighbour w =", w, " ---")
-
-                G2 = copy(G1)
-                sgn2 = sgn
-
-                # u_w edge -> v_w edge
-                u_w_label = G2.edge_label(u, w)
-                G2.delete_edge(u, w)
-
-                G2.add_edge(v, w, min(u_v_label, u_w_label))
-
-                print("state after u_w -> v_w:")
-                print("vertices: ", G2.vertices())
-                print("edges: ", G2.edges())
-
-                # we now need to split u into separate epsilon-vertices
-                # for each remaining adjecent vertex s of u
-                n_new_eps = len(G2.neighbors(u))
-                for (j, s) in enumerate(G2.neighbors(u)): 
-                    
-                    u_s_label = G2.edge_label(u, s)
-                    G2.delete_edge(u, s)
-
-                    # add new epsilon-vertex
-                    # since we add the new vertex at the end, it automatcally corresponds to epsilon
-                    assert set(G2.vertices()) == set(range(len(G2.vertices())))
-                    new_eps_label = len(G2.vertices()) 
-
-                    old_size = G2.order()
-                    #print(G2.vertices())
-                    G2.add_vertex(new_eps_label)
-                    assert G2.order() == old_size + 1, (G2.order(), old_size)
-
-                    if j == 0: label = min(max(u_v_label, u_w_label), u_s_label)
-                    else: label = len(G2.edges()) + (j-1)
-                    G2.add_edge(new_eps_label, s, label)
-
-                G2.delete_vertex(u)
-
-                print("state after turning u into epsilon(s):")
-                print("vertices: ", G2.vertices())
-                print("edges: ", G2.edges())
-
-                # in case we have too few edges some double edges have been created => zero
-                if (previous_size - G2.size()) > 1: continue
-
-                G2.relabel(range(len(G2.vertices())), inplace=True)
-                # find edge permutation sign
-                sgn2 *= Shared.shifted_edge_perm_sign2(G2)
-                
-                # sanity checks
-                #n_eps_in_target = self.target.get_n_epsilon_from_graph(G2)
-                #assert n_eps_in_target == n_old_eps + n_new_eps
-                #assert G2.order() == self.target.n_vertices + self.target.n + self.target.n_omega + n_eps_in_target
-                print("adding to image ---")
-                print("sign:", sgn2)
-                print("vertices: ", G1.vertices())
-                print("edges: ", G1.edges())
-                image.append((G2, sgn2))
-
-    return image
-"""
 
 def plot_image_list(image_list, n_vertices, n, n_omega, n_epsilon, operator):
     for i, image in enumerate(image_list):

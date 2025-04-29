@@ -270,8 +270,9 @@ class ContractEdgesGO(SymmetricGraphComplex.SymmetricGraphOperator):
 
     # TODO:
     # sign!
-    def operate_on(self, G):
 
+    def operate_on(self, G):
+        
         n_vertices = self.domain.n_vertices
         n = self.domain.n
         n_omega = self.domain.n_omega
@@ -281,10 +282,10 @@ class ContractEdgesGO(SymmetricGraphComplex.SymmetricGraphOperator):
         image = []
         for (i, e) in enumerate(G.edges(labels=False, sort=True)):
 
-            #print("contracting edge (u,v) =", e)
+            #print("contracting edge (u,v) =", e, "###########")
             
             (u, v) = e
-            sgn = (-1)**i
+            sgn = 1
 
             # ensure u<v (this should be always true anyway actually)
             assert u < v
@@ -297,19 +298,10 @@ class ContractEdgesGO(SymmetricGraphComplex.SymmetricGraphOperator):
             # u or v are numbered vertices        
             if u >= n_vertices and u < n_vertices + n: continue
             if v >= n_vertices and v < n_vertices + n: continue
-        
-            # print("sgn0",sgn)
-            previous_size = G.size()
 
-            # print("sgn1",sgn)
-            G1 = copy(G)
             # label all edges to determine sign later
+            G1 = copy(G)
             Shared.enumerate_edges(G1)
-            """
-            print("intial state: ###########")
-            print("vertices: ", G1.vertices())
-            print("edges: ", G1.edges())
-            """
 
 
             # contracting the edge (u,v)
@@ -317,249 +309,127 @@ class ContractEdgesGO(SymmetricGraphComplex.SymmetricGraphOperator):
 
             # if both u and v are internal vertices
             if v < n_vertices:
+                
+                #print("CASE: inner_vertex - inner_vertex")
+
                 assert u < n_vertices
 
                 # contract edge by merging vertices
                 G1.merge_vertices([v, u])
 
-                # if we have too few edges some double edges have been created => zero
-                if (previous_size - G1.size()) > 1: continue
+                # if we have too few edges, some double edges have been created => zero
+                if G.size() - G1.size() > 1: continue
 
-                # relabel vertices
+                # relabel vertices back to 0,1,2,...,k
                 G1.relabel(range(len(G1.vertices())), inplace=True)
                 
                 # find edge permutation sign
                 sgn *= Shared.shifted_edge_perm_sign2(G1)
                 # print("sgn3_",sgn)
-                #print("adding to image")
                 image.append((G1, sgn))
                 # image.append((Graph(G1.graph6_string()), sgn))
                 # print("hmm0:", G.graph6_string(), G1.graph6_string())
 
 
+            # if u is an internal vertex and v is an epsilon-vertex
+            elif u < n_vertices \
+                and v >= n_vertices + n + n_omega:
+                
+                #print("CASE: inner_vertex - epsilon")
+
+                G1.delete_vertex(v)
+
+                # split u into separate epsilon-vertices
+                for w in G1.neighbors(u):
+
+                    #print("picking neighbour w =", w, " ---")
+                    
+                    u_w_label = G1.edge_label(u, w)
+                    G1.delete_edge(u, w)
+
+                    new_eps_label = max(G1.vertices()) + 1
+                    assert not new_eps_label in G1.vertices()
+
+                    G1.add_vertex(new_eps_label)
+                    G1.add_edge(w, new_eps_label, u_w_label)
+
+                G1.delete_vertex(u) 
+
+                # relabel vertices back to 0,1,2,...,k
+                G1.relabel(range(len(G1.vertices())), inplace=True)
+
+                sgn *= Shared.shifted_edge_perm_sign2(G1)
+                image.append((G1, sgn))
+
+
+            
+
             # if u is an internal vertex and v is a omega-vertex
             # the second vertex is now an omega-vertex, so we need to merge the vertex with the eps vertex
             # after reconnecting one of the edges to omega
             # we assume that u != eps, because eps-omega-edges cannot be contracted
-            if True: break
             elif u < n_vertices \
                 and v >= n_vertices + n \
                 and v < n_vertices + n + n_omega:
                 
-                missing_edge_labels = []
-                u_v_label = G1.edge_label(u, v)
-                missing_edge_labels.append(u_v_label)
-                G1.delete_edge(u, v)
-                print("state after deleting u_v:")
-                print("vertices: ", G1.vertices())
-                print("edges: ", G1.edges())
+                #print("CASE: inner_vertex - omega")
 
-                # loop over neighbors w of u to be connected to omega
+                G1.delete_vertex(v)
+
+                # pick vertex w which will be connected to omega
                 for w in G1.neighbors(u):
 
-                    print("picking neighbour w =", w, " ---")
-
+                    #print("picking neighbour w =", w, " ---")
                     G2 = copy(G1)
                     sgn2 = sgn
 
-                    # u_w edge -> v_w edge
                     u_w_label = G2.edge_label(u, w)
-                    missing_edge_labels.append(u_w_label)
                     G2.delete_edge(u, w)
 
-                    new_edge_label = min(missing_edge_labels)
-                    print("missing_edge_labels:", missing_edge_labels)
-                    print("new_edge_label:", new_edge_label)
-                    missing_edge_labels.remove(new_edge_label)
-                    
-                    G2.add_edge(v, w, new_edge_label)
+                    # why v is convenient:
+                    # - v was the label of some omega-vertex 
+                    #   ->  it will again correspond to an omega vertex in the new partition in self.target
+                    #       as long as we insure to add the new epsilons after it
+                    # - v has been deleted and is hence a "free" vertex-label
+                    new_omega_label = v
+                    assert not new_omega_label in G2.vertices()
 
-                    print("state after u_w -> v_w:")
-                    print("vertices: ", G2.vertices())
-                    print("edges: ", G2.edges())
-                    
+                    G2.add_vertex(new_omega_label)
+                    G2.add_edge(w, new_omega_label, u_w_label)
 
-                    # we now need to split u into separate epsilon-vertices
-                    # for each remaining adjecent vertex s of u
+                    # all other vertices s will be connected to epsilons
                     n_new_eps = len(G2.neighbors(u))
-                    for (j, s) in enumerate(G2.neighbors(u)): 
+                    for s in G2.neighbors(u): 
                         
+                        #print("picking neighbour s =", s, " ---")
+                    
                         u_s_label = G2.edge_label(u, s)
-                        missing_edge_labels.append(u_s_label)
-                        print("missing_edge_labels:", missing_edge_labels)
                         G2.delete_edge(u, s)
 
-                        # add new epsilon-vertex
-                        # since we add the new vertex at the end, it automatcally corresponds to epsilon
-                        assert set(G2.vertices()) == set(range(len(G2.vertices())))
-                        new_eps_label = len(G2.vertices()) 
+                        new_eps_label = max(G2.vertices()) + 1
+                        assert not new_eps_label in G2.vertices()
 
-                        old_size = G2.order()
-                        #print(G2.vertices())
                         G2.add_vertex(new_eps_label)
-                        assert G2.order() == old_size + 1, (G2.order(), old_size)
+                        G2.add_edge(s, new_eps_label, u_s_label)
+                    
+                    G2.delete_vertex(u) 
 
-                        end_label = len(G2.edges()) + (j-1)
-                        missing_label = min(missing_edge_labels)
-                        if missing_label < end_label and len(missing_edge_labels) > 0:
-                            missing_edge_labels.remove(missing_label)
-                            new_edge_label = missing_label
-                        else:
-                            new_edge_label = end_label
-
-                        print("new_edge_label:", new_edge_label)
-                        assert not new_edge_label in G2.edge_labels()
-                        G2.add_edge(new_eps_label, s, new_edge_label)
-
-                    print("state after turning u into epsilon(s):")
-                    print("vertices: ", G2.vertices())
-                    print("edges: ", G2.edges())
-
-                    G2.delete_vertex(u)
-                    G2.relabel(list(range(G2.order())), inplace=True)
-
-                    print("state after relabelling:")
-                    print("vertices: ", G2.vertices())
-                    print("edges: ", G2.edges())
-
-                    assert set(G2.vertices()) == set(range(G2.order()))
-                    edge_labels = G2.edge_labels()
-                    edge_labels.sort()
-                    print(edge_labels)
-                    assert set(G2.edge_labels()) == set(range(len(G2.edges()))), (u_v_label, u_w_label, u_s_label)
-
-                    # in case we have too few edges some double edges have been created => zero
-                    if (previous_size - G2.size()) > 1: continue
-
+                    # relabel vertices back to 0,1,2,...,k
                     G2.relabel(range(len(G2.vertices())), inplace=True)
-                    # find edge permutation sign
+                    
                     sgn2 *= Shared.shifted_edge_perm_sign2(G2)
-                    print("final sign:", sgn2)
+                    image.append((G2, sgn))
 
-                    # sanity checks
+                    # sanity-checks
                     n_eps_in_target = self.target.get_n_epsilon_from_graph(G2)
                     assert n_eps_in_target == n_epsilon + n_new_eps
                     assert G2.order() == self.target.n_vertices + self.target.n + self.target.n_omega + n_eps_in_target
-                    print("adding to image")
+
                     image.append((G2, sgn2))
+
 
         return image
     
-    """
-    def operate_on(self, G):
-
-        n_old_eps = self.domain.get_n_epsilon_from_graph(G)
-
-        # Operates on the graph G by contracting an edge and unifying the adjacent vertices.
-        image = []
-        for (i, e) in enumerate(G.edges(labels=False, sort=True)):
-            (u, v) = e
-            sgn = (-1)**i
-
-            # ensure u<v (this should be always true anyway actually)
-            assert u < v
-
-            # only edges connected to at least one internal vertex, and not connected to a numbered hair-vertex can be contracted
-
-            # both u and v are not internal vertices
-            if u >= self.domain.n_vertices: continue
-
-            # u or v are numbered vertices        
-            if u >= self.domain.n_vertices and u < self.domain.n_vertices + self.domain.n: continue
-            if v >= self.domain.n_vertices and v < self.domain.n_vertices + self.domain.n: continue
-        
-            # print("sgn0",sgn)
-            previous_size = G.size()
-
-            # print("sgn1",sgn)
-            G1 = copy(G)
-            # label all edges to determine sign later
-            Shared.enumerate_edges(G1)
-
-
-            # contracting the edge (u,v)
-            # we always delete the lower index vertex. This ensures that the extra vertices are never deleted
-
-            # if both u and v are internal vertices
-            if v < self.domain.n_vertices:
-                assert u < self.domain.n_vertices
-
-                # contract edge by merging vertices
-                G1.merge_vertices([v, u])
-
-                # if we have too few edges some double edges have been created => zero
-                if (previous_size - G1.size()) > 1: continue
-
-                # relabel vertices
-                G1.relabel(range(len(G1.vertices())), inplace=True)
-                
-                # find edge permutation sign
-                sgn *= Shared.shifted_edge_perm_sign2(G1)
-                # print("sgn3_",sgn)
-                image.append((G1, sgn))
-                # image.append((Graph(G1.graph6_string()), sgn))
-                # print("hmm0:", G.graph6_string(), G1.graph6_string())
-
-
-            # if u is an internal vertex and v is a omega-vertex
-            # the second vertex is now an omega-vertex, so we need to merge the vertex with the eps vertex
-            # after reconnecting one of the edges to omega
-            # we assume that u != eps, because eps-omega-edges cannot be contracted
-            elif u < self.domain.n_vertices \
-                and v >= self.domain.n_vertices + self.domain.n \
-                and v < self.domain.n_vertices + self.domain.n + self.domain.n_omega:
-
-                G1.delete_edge(u, v)
-
-                # loop over neighbors w of u to be connected to omega
-                for w in G1.neighbors(u):
-                    G2 = copy(G1)
-                    sgn2 = sgn
-
-                    # reconnect the w-v-edge to omega (i.e., to v)
-                    old_label = G2.edge_label(u, w)
-                    G2.delete_edge(u, w)
-                    G2.add_edge(w, v, old_label)
-
-                    # we now need to split u into separate epsilon-vertices
-                    # for each remaining adjecent vertex s of u
-                    n_new_eps = len(G2.neighbors(u))
-                    for (j, s) in enumerate(G2.neighbors(u)): 
-                        G2.delete_edge(u, s)
-
-                        # add new epsilon-vertex
-                        # since we add the new vertex at the end, it automatcally corresponds to epsilon
-                        assert set(G2.vertices()) == set(range(len(G2.vertices())))
-                        new_vertex_label = len(G2.vertices()) 
-
-                        old_size = G2.order()
-                        #print(G2.vertices())
-                        G2.add_vertex(new_vertex_label)
-                        assert G2.order() == old_size + 1, (G2.order(), old_size)
-
-                        label = 0 #TODO!
-                        G2.add_edge(new_vertex_label, s, label)
-
-                    G2.delete_vertex(u)
-                        
-
-                    # in case we have too few edges some double edges have been created => zero
-                    if (previous_size - G2.size()) > 1: continue
-
-                    G2.relabel(range(len(G2.vertices())), inplace=True)
-                    # find edge permutation sign
-                    sgn2 *= Shared.shifted_edge_perm_sign2(G2)
-
-                    # sanity checks
-                    n_eps_in_target = self.target.get_n_epsilon_from_graph(G2)
-                    assert n_eps_in_target == n_old_eps + n_new_eps
-                    assert G2.order() == self.target.n_vertices + self.target.n + self.target.n_omega + n_eps_in_target
-
-                    image.append((G2, sgn2))
-
-
-        return image
-    """
     """
     def operate_on(self, G):
         # print("operate on:", G.graph6_string(),
@@ -638,24 +508,6 @@ class ContractEdgesGO(SymmetricGraphComplex.SymmetricGraphOperator):
                         G2.delete_edge(u, eps)
                         sgn2 *= 1 if ((k % 2 == 0) == (k < i)) else -1
 
-                    # now merge u and eps
-                    G2.merge_vertices([eps, u])
-                    # in case we have too few edges some double edges have been created => zero
-                    if (previous_size - G2.size()) != (2 if new_has_tadpole else 1):
-                        continue
-                    G2.relabel(range(0, self.domain.n_vertices +
-                               self.domain.n_hairs+self.domain.n_ws), inplace=True)
-                    # find edge permutation sign
-                    sgn2 *= Shared.shifted_edge_perm_sign2(G2)
-                    # sanity checks
-                    if G2.order() != self.target.n_vertices+self.target.n_hairs+self.target.n_ws+1:
-                        print("Error contract:", G.graph6_string(),
-                              G2.graph6_string())
-                    # else:
-                    #     print("hmm:", G.graph6_string(), G2.graph6_string())
-                    image.append((G2, sgn2))
-
-        return image
     """
     
     
