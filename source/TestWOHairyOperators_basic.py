@@ -162,6 +162,9 @@ def operate_on_ContractEdges(G, n_vertices, n, n_omega, n_epsilon):
 
         # if both u and v are internal vertices
         if False and v < n_vertices:
+            
+            print("CASE: inner_vertex - inner_vertex")
+
             assert u < n_vertices
 
             # contract edge by merging vertices
@@ -188,6 +191,8 @@ def operate_on_ContractEdges(G, n_vertices, n, n_omega, n_epsilon):
         elif False and u < n_vertices \
             and v >= n_vertices + n + n_omega:
             
+            print("CASE: inner_vertex - epsilon")
+
             G1.delete_vertex(v)
 
             # split u into separate epsilon-vertices
@@ -223,13 +228,66 @@ def operate_on_ContractEdges(G, n_vertices, n, n_omega, n_epsilon):
         # the second vertex is now an omega-vertex, so we need to merge the vertex with the eps vertex
         # after reconnecting one of the edges to omega
         # we assume that u != eps, because eps-omega-edges cannot be contracted
-        if True: continue
         elif u < n_vertices \
             and v >= n_vertices + n \
             and v < n_vertices + n + n_omega:
             
-            pass
-            # TODO
+            print("CASE: inner_vertex - omega")
+
+            G1.delete_vertex(v)
+
+            # pick vertex w which will be connected to omega
+            for w in G1.neighbors(u):
+
+                print("picking neighbour w =", w, " ---")
+                G2 = copy(G1)
+                sgn2 = sgn
+
+                u_w_label = G2.edge_label(u, w)
+                G2.delete_edge(u, w)
+
+                # why v is convenient:
+                # - v was the label of some omega-vertex 
+                #   ->  it will again correspond to an omega vertex in the new partition in self.target
+                #       as long as we insure to add the new epsilons after it
+                # - v has been deleted and is hence a "free" vertex-label
+                new_omega_label = v
+                assert not new_omega_label in G2.vertices()
+
+                G2.add_vertex(new_omega_label)
+                G2.add_edge(w, new_omega_label, u_w_label)
+
+                # all other vertices s will be connected to epsilons
+                for s in G2.neighbors(u): 
+                    
+                    print("picking neighbour s =", s, " ---")
+                
+                    u_s_label = G2.edge_label(u, s)
+                    G2.delete_edge(u, s)
+
+                    new_eps_label = max(G2.vertices()) + 1
+                    assert not new_eps_label in G2.vertices()
+
+                    G2.add_vertex(new_eps_label)
+                    G2.add_edge(s, new_eps_label, u_s_label)
+                
+                G2.delete_vertex(u) 
+                
+                """
+                print("state befor relabeling:")
+                print("vertices: ", G2.vertices())
+                print("edges: ", G2.edges())
+                """
+
+                # relabel vertices back to 0,1,2,...,k
+                G2.relabel(range(len(G2.vertices())), inplace=True)
+
+                sgn2 *= Shared.shifted_edge_perm_sign2(G2)
+                print("adding to image ---")
+                print("sign:", sgn2)
+                print("vertices: ", G2.vertices())
+                print("edges: ", G2.edges())
+                image.append((G2, sgn))
 
     return image
 
@@ -424,8 +482,11 @@ def test_graph(G, n_vertices, n, n_omega, n_epsilon, operator):
 #test_graph(Graph({0:[1, 2, 3], 1:[4,5]}), n_vertices=2, n=0, n_omega=0, n_epsilon=4, operator=operate_on_ContractEdges)
 
 
-test_graph(Graph({0:[1, 2, 3], 1:[2,4]}), n_vertices=3, n=0, n_omega=0, n_epsilon=2, operator=operate_on_ContractEdges)
+# testing: internal_vertex - epsilon
+#test_graph(Graph({0:[1, 2, 3], 1:[2,4]}), n_vertices=3, n=0, n_omega=0, n_epsilon=2, operator=operate_on_ContractEdges)
 
+# testing: internal_vertex - omega
+test_graph(Graph({0:[1, 2, 3], 1:[2,4]}), n_vertices=3, n=0, n_omega=1, n_epsilon=1, operator=operate_on_ContractEdges)
 
 
 
