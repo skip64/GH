@@ -268,8 +268,7 @@ class ContractEdgesGO(SymmetricGraphComplex.SymmetricGraphOperator):
     def get_type(self):
         return 'contract edges'
 
-    # TODO:
-    # sign!
+
     def operate_on(self, G):
         
         n_vertices = self.domain.n_vertices
