@@ -270,7 +270,6 @@ class ContractEdgesGO(SymmetricGraphComplex.SymmetricGraphOperator):
 
     # TODO:
     # sign!
-
     def operate_on(self, G):
         
         n_vertices = self.domain.n_vertices
@@ -285,7 +284,7 @@ class ContractEdgesGO(SymmetricGraphComplex.SymmetricGraphOperator):
             #print("contracting edge (u,v) =", e, "###########")
             
             (u, v) = e
-            sgn = 1
+            sgn = (-1)**i
 
             # ensure u<v (this should be always true anyway actually)
             assert u < v
@@ -362,8 +361,6 @@ class ContractEdgesGO(SymmetricGraphComplex.SymmetricGraphOperator):
                 image.append((G1, sgn))
 
 
-            
-
             # if u is an internal vertex and v is a omega-vertex
             # the second vertex is now an omega-vertex, so we need to merge the vertex with the eps vertex
             # after reconnecting one of the edges to omega
@@ -377,7 +374,7 @@ class ContractEdgesGO(SymmetricGraphComplex.SymmetricGraphOperator):
                 G1.delete_vertex(v)
 
                 # pick vertex w which will be connected to omega
-                for w in G1.neighbors(u):
+                for (j, w) in enumerate(G1.neighbors(u)):
 
                     #print("picking neighbour w =", w, " ---")
                     G2 = copy(G1)
@@ -418,7 +415,6 @@ class ContractEdgesGO(SymmetricGraphComplex.SymmetricGraphOperator):
                     G2.relabel(range(len(G2.vertices())), inplace=True)
                     
                     sgn2 *= Shared.shifted_edge_perm_sign2(G2)
-                    image.append((G2, sgn))
 
                     # sanity-checks
                     n_eps_in_target = self.target.get_n_epsilon_from_graph(G2)

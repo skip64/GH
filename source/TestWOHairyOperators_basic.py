@@ -198,7 +198,7 @@ def operate_on_ContractEdges(G, n_vertices, n, n_omega, n_epsilon):
             # split u into separate epsilon-vertices
             for w in G1.neighbors(u):
 
-                print("picking neighbour w =", w, " ---")
+                print("picking neighbour w =", w)
                 
                 u_w_label = G1.edge_label(u, w)
                 G1.delete_edge(u, w)
@@ -239,7 +239,7 @@ def operate_on_ContractEdges(G, n_vertices, n, n_omega, n_epsilon):
             # pick vertex w which will be connected to omega
             for w in G1.neighbors(u):
 
-                print("picking neighbour w =", w, " ---")
+                print("picking neighbour w =", w)
                 G2 = copy(G1)
                 sgn2 = sgn
 
@@ -260,7 +260,7 @@ def operate_on_ContractEdges(G, n_vertices, n, n_omega, n_epsilon):
                 # all other vertices s will be connected to epsilons
                 for s in G2.neighbors(u): 
                     
-                    print("picking neighbour s =", s, " ---")
+                    print("picking neighbour s =", s)
                 
                     u_s_label = G2.edge_label(u, s)
                     G2.delete_edge(u, s)
@@ -287,10 +287,9 @@ def operate_on_ContractEdges(G, n_vertices, n, n_omega, n_epsilon):
                 print("sign:", sgn2)
                 print("vertices: ", G2.vertices())
                 print("edges: ", G2.edges())
-                image.append((G2, sgn))
+                image.append((G2, sgn2))
 
     return image
-
 
 
 def plot_image_list(image_list, n_vertices, n, n_omega, n_epsilon, operator):
