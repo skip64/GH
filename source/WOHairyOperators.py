@@ -425,85 +425,6 @@ class ContractEdgesGO(SymmetricGraphComplex.SymmetricGraphOperator):
 
         return image
     
-    """
-    def operate_on(self, G):
-        # print("operate on:", G.graph6_string(),
-            #   self.domain.get_ordered_param_dict())
-        # Operates on the graph G by contracting an edge and unifying the adjacent vertices.
-        image = []
-        for (i, e) in enumerate(G.edges(labels=False,sort=True)):
-            (u, v) = e
-
-            # ensure u<v (this should be always true anyway actually)
-            if u > v:
-                u, v = v, u
-
-            # only edges connected to at least one internal vertex, and not connected to a numbered hair-vertex can be contracted
-            if u >= self.domain.n_vertices or v >= self.domain.n_vertices+self.domain.n_ws+1:
-                continue
-
-            sgn = 1 if i % 2 == 0 else -1
-            # print("sgn0",sgn)
-            previous_size = G.size()
-            previous_has_tadpole = (
-                previous_size - self.domain.n_vertices - self.domain.n_hairs < self.domain.n_loops)
-            sgn *= -1 if previous_has_tadpole else 1
-            # print("sgn1",sgn)
-            G1 = copy(G)
-            # label all edges to determine sign later
-            Shared.enumerate_edges(G1)
-
-            # we always delete the lower index vertex. This ensures that the extra vertices are never deleted
-            if v <= self.domain.n_vertices:
-                G1.merge_vertices([v, u])
-                if (previous_size - G1.size()) != 1:
-                    continue
-                G1.relabel(range(0, self.domain.n_vertices+self.domain.n_ws +
-                           self.domain.n_hairs), inplace=True)
-                # find edge permutation sign
-                sgn *= Shared.shifted_edge_perm_sign2(G1)
-                # print("sgn3_",sgn)
-                image.append((G1, sgn))
-                # image.append((Graph(G1.graph6_string()), sgn))
-                # print("hmm0:", G.graph6_string(), G1.graph6_string())
-            elif u < self.domain.n_vertices and v >= self.domain.n_vertices+1:
-                # the second vertex is now an omega-vertex, so we need to merge the vertex with the eps vertex
-                # after reconnecting one of the edges to omega
-                # we assume that u != eps, because eps-omega-edges cannot be contracted
-                G1.delete_edge(u, v)
-                # special care must be taken since a tadpole could be created at eps
-                # and this is true iff there is an edge u-eps
-                eps = self.domain.n_vertices
-                # new_has_tadpole = G1.has_edge(u, eps)
-                # # double tadpole => zero
-                # if new_has_tadpole and previous_has_tadpole:
-                #     continue
-                # if new_has_tadpole:
-                #     # remove the edge and compute the appropriate sign
-                #     k = G1.edge_label(u, eps)
-                #     G1.delete_edge(u, eps)
-                #     sgn *= 1 if ((k % 2 == 0) == (k < i)) else -1
-
-                # loop over neighbors w to be connected to omega
-                for w in G1.neighbors(u):
-                    G2 = copy(G1)
-                    sgn2 = sgn
-                    # reconnect the w-v-edge to omega (i.e., to v)
-                    old_label = G2.edge_label(u, w)
-                    G2.delete_edge(u, w)
-                    G2.add_edge(w, v, old_label)
-
-                    # we want to merge u and eps... however, this might create a tadpole
-                    new_has_tadpole = G2.has_edge(u, eps)
-                    if new_has_tadpole and previous_has_tadpole:
-                        continue
-                    if new_has_tadpole:
-                        # remove the edge and compute the appropriate sign
-                        k = G2.edge_label(u, eps)
-                        G2.delete_edge(u, eps)
-                        sgn2 *= 1 if ((k % 2 == 0) == (k < i)) else -1
-
-    """
     
     
     def get_work_estimate(self):
@@ -668,35 +589,9 @@ class WOHairyGC(GraphComplex.GraphComplex):
     def __str__(self):
         return '<%s graph complex with %s>' % (graph_type, str(self.sub_type))
 
-    def print_dim_and_eulerchar(self):
-        for n_omega in self.omega_range:
-            for n in self.n_range:
-                for genus in self.genus_range:
-                    ds = [WOHairyFinalGVS(genus=genus, n=n, n_omega=n_omega, degree=degree).get_dimension()
-                          for degree in self.degree_range]
-                    eul = sum([(1 if j % 2 == 0 else -1) *
-                              d for j, d in enumerate(ds)])
-                    print("Dimensions (n_omega,n,genus) ", n_omega,
-                          n, genus, ":", ds, "Euler", eul)
 
-    # TODO: Insert contribution from EpsToOmegaGo
-    def print_cohomology_dim(self):
-        for n_omega in self.omega_range:
-            for n in self.n_range:
-                for genus in self.genus_range:
-                    cohomdict = {}
-                    for degree in self.degree_range:
-                        D1 = ContractEdgesGO.generate_operator(degree, genus, n, n_omega)
-                        D2 = ContractEdgesGO.generate_operator(degree+1, genus, n, n_omega)
-                        try:
-                            d = WOHairyFinalGVS(genus=genus, n=n, n_omega=n_omega, degree=degree).get_dimension()
-                            r1 = D1.get_matrix_rank()
-                            r2 = D2.get_matrix_rank()
-                            cohomdict[degree] = d-r1-r2
-                        except:
-                            pass
 
-                    print("Cohomology Dimensions (w,n,genus) ",
-                          n_omega, n, genus, ":", cohomdict)
+    
+
 
 

@@ -3,12 +3,14 @@
 
 
 import unittest
-from WOHairyOperators import WOHairyGC
+from WOHairyOperators import WOHairyGC, ContractEdgesGO, EpsToOmegaGO, WOHairyFinalGVS
 from sage.all import *
 import GraphOperator
 import itertools
 import Parameters
 import Shared
+from sage.all import StandardTableaux
+
 
 def DSquareTest_single(operator, genus, n, n_omega=11):
 
@@ -33,7 +35,7 @@ def DSquareTest_single(operator, genus, n, n_omega=11):
     GC.square_zero_test()
 
 
-def Anticomm_Test(genus, n, n_omega=11, eps=Parameters.square_zero_test_eps):
+def Anticomm_Test_single(genus, n, n_omega=11, eps=Parameters.square_zero_test_eps):
 
     deg_min = 22 - n_omega + genus - 1
 
@@ -83,6 +85,65 @@ def Anticomm_Test(genus, n, n_omega=11, eps=Parameters.square_zero_test_eps):
                     assert False, 'Anitcomm-Test failed!'
 
 
+
+def cohomology_dim_test_single(genus, n, degrees, diagrams, n_omega = 11):
+
+    print("genus:", genus)
+    print("n:", n)
+
+    deg_min = 22 - n_omega + genus - 1
+
+    degree_range = range(deg_min, deg_min+15)
+    
+    cohomdict = {}
+    for degree in degree_range:
+
+        D_Cont_deg = ContractEdgesGO.generate_operator(degree=degree, genus=genus, n=n, n_omega=n_omega)
+        D_Cont_deg_p1 = ContractEdgesGO.generate_operator(degree=degree+1, genus=genus, n=n, n_omega=n_omega)
+        D_eps_deg = EpsToOmegaGO.generate_operator(degree=degree, genus=genus, n=n, n_omega=n_omega)
+        D_eps_deg_p1 = EpsToOmegaGO.generate_operator(degree=degree+1, genus=genus, n=n, n_omega=n_omega)
+
+        for op in [D_Cont_deg, D_Cont_deg_p1, D_eps_deg, D_eps_deg_p1]:
+            op.domain.build_basis()
+            op.target.build_basis()
+
+            op.build_matrix(skip_if_no_basis=False)
+
+        D_Cont_deg_mat = D_Cont_deg.get_matrix()
+        D_Cont_deg_p1_mat = D_Cont_deg_p1.get_matrix()
+        D_eps_deg_mat = D_eps_deg.get_matrix()
+        D_eps_deg_p1_mat = D_eps_deg_p1.get_matrix()
+
+        assert D_Cont_deg.domain == D_eps_deg.domain
+        deg_double_mat = D_Cont_deg_mat.stack(D_eps_deg_mat)
+
+        assert D_Cont_deg_p1.domain == D_eps_deg_p1.domain
+        deg_p1_double_mat = D_Cont_deg_p1_mat.stack(D_eps_deg_p1_mat) 
+        
+        d = WOHairyFinalGVS(genus=genus, n=n, n_omega=n_omega, degree=degree).get_dimension()
+        r1 = deg_double_mat.rank()
+        r2 = deg_p1_double_mat.rank()
+        r3 = D_eps_deg_p1_mat.rank()
+
+        cohom_dim = d - r1 - r2 + r3
+        
+        if cohom_dim > 0:
+            print("d:", d)
+            print("r1:", r1)
+            print("r2:", r2)
+            print("r3:", r3)
+            print("degree:", degree)
+            print("dimension:", d - r1 - r2 + r3)
+
+            cohomdict[degree] = cohom_dim
+
+    print("Cohomology Dimensions (genus, n) ",
+            genus, n, ":", cohomdict)
+    
+    for degree, diagram in zip(degrees, diagrams):
+        assert cohomdict[degree] == StandardTableaux(diagram).cardinality()
+
+
 g_n_pairs = [(5, 5), (7, 2), (6, 4), (8, 1), 
                 (5, 6), (7, 3), (9, 0), (8, 2), (6, 5),
                 (9, 1), (7, 4), (10, 0), (8, 3),
@@ -102,14 +163,30 @@ class TestOperators(unittest.TestCase):
 
     def Anticommutativity_Test(self):
         for (genus, n) in g_n_pairs:
-            Anticomm_Test(genus=genus, n=n)
+            Anticomm_Test_single(genus=genus, n=n)
+
+
+
+    def Cohom_dim_Test(self):
+        g_n_dim_pairs = [   # excess 0
+                            (1, 11, [11], [[1,1,1,1,1,1,1,1,1,1,1]]),
+                            (3, 8, [14], [[1,1,1,1,1,1,1,1]]),
+                            (5, 5, [17], [[1,1,1,1,1]]),
+                            (7, 2, [20], [[1,1]]),
+                            # excess 1
+                            (2, 10, [13], [[2,1,1,1,1,1,1,1,1]]),
+                            (4, 7, [16], [[2,1,1,1,1,1]])
+                         ]
+        for (genus, n, degrees, diagrams) in g_n_dim_pairs:
+            cohomology_dim_test_single(genus=genus, n=n, degrees=degrees, diagrams=diagrams)
         
     
 def suite():
     suite = unittest.TestSuite()
     #suite.addTest(TestOperators('DSquareTest_EpsToOmega'))
     #suite.addTest(TestOperators('DSquareTest_ContractEdges'))
-    suite.addTest(TestOperators('Anticommutativity_Test'))
+    #suite.addTest(TestOperators('Anticommutativity_Test'))
+    suite.addTest(TestOperators('Cohom_dim_Test'))
     return suite
 
 

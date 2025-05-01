@@ -18,6 +18,11 @@ GC.build_matrix(ignore_existing_files=True)
 
 GC.square_zero_test()
 
+GC.compute_rank(sage="integer", ignore_existing_files=True)
+
+GC.print_dim_and_eulerchar()
+GC.print_cohomology_dim()
+
 
 """
 EpsToOmegaGO ---
@@ -59,10 +64,7 @@ Square zero test for <contract edges differential>> failed for the pair:
 <contract edges graph operator, domain: <wohairy vector space with parameters: (genus: 5 n: 6 omegas: 11 degree: 17 )>>
 """
 
-#GC.compute_rank(sage="integer", ignore_existing_files=True)
 
-#GC.print_dim_and_eulerchar()
-#GC.print_cohomology_dim()
 
 
 
