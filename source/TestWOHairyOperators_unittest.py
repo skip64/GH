@@ -86,7 +86,7 @@ def Anticomm_Test_single(genus, n, n_omega=11, eps=Parameters.square_zero_test_e
 
 
 
-def cohomology_dim_test_single(genus, n, degrees, diagrams, n_omega = 11):
+def cohomology_dim_test_single(genus, n, nonzero_degrees, diagram_lists, n_omega = 11):
 
     print("genus:", genus)
     print("n:", n)
@@ -127,7 +127,13 @@ def cohomology_dim_test_single(genus, n, degrees, diagrams, n_omega = 11):
 
         cohom_dim = d - r1 - r2 + r3
         
-        if cohom_dim > 0:
+        if cohom_dim == 0:
+            assert degree not in nonzero_degrees
+            
+        else:
+            assert cohom_dim > 0
+            assert degree in nonzero_degrees
+
             print("d:", d)
             print("r1:", r1)
             print("r2:", r2)
@@ -140,8 +146,14 @@ def cohomology_dim_test_single(genus, n, degrees, diagrams, n_omega = 11):
     print("Cohomology Dimensions (genus, n) ",
             genus, n, ":", cohomdict)
     
-    for degree, diagram in zip(degrees, diagrams):
-        assert cohomdict[degree] == StandardTableaux(diagram).cardinality()
+    assert len(nonzero_degrees) == len(diagram_lists)
+    for degree, diagram_list in zip(nonzero_degrees, diagram_lists):
+
+        test_dim = 0
+        for digaram in diagram_list:
+            test_dim += StandardTableaux(digaram).cardinality()
+
+        assert cohomdict[degree] == test_dim, "(g,n) = "+ str((genus, n))
 
 
 g_n_pairs = [(5, 5), (7, 2), (6, 4), (8, 1), 
@@ -168,17 +180,40 @@ class TestOperators(unittest.TestCase):
 
 
     def Cohom_dim_Test(self):
-        g_n_dim_pairs = [   # excess 0
-                            (1, 11, [11], [[1,1,1,1,1,1,1,1,1,1,1]]),
-                            (3, 8, [14], [[1,1,1,1,1,1,1,1]]),
-                            (5, 5, [17], [[1,1,1,1,1]]),
-                            (7, 2, [20], [[1,1]]),
-                            # excess 1
-                            (2, 10, [13], [[2,1,1,1,1,1,1,1,1]]),
-                            (4, 7, [16], [[2,1,1,1,1,1]])
-                         ]
-        for (genus, n, degrees, diagrams) in g_n_dim_pairs:
-            cohomology_dim_test_single(genus=genus, n=n, degrees=degrees, diagrams=diagrams)
+        g_n_dim_pairs = [   
+            # excess 0
+            (5, 5, [17], [[[1,1,1,1,1]]]),
+            (7, 2, [20], [[[1,1]]]),
+            (3, 8, [14], [[[1,1,1,1,1,1,1,1]]]),
+            (1, 11, [11], [[[1,1,1,1,1,1,1,1,1,1,1]]]),
+
+            # excess 1
+            (8, 1, [], []),
+            (6, 4, [19], [[[2,1,1]]]),
+            (4, 7, [16], [[[2,1,1,1,1,1]]]),
+            (2, 10, [13], [[[2,1,1,1,1,1,1,1,1]]]),
+
+
+            # excess 2
+            # TODO
+            
+            
+            # excess 3
+            (8, 2, [22], [[[2]]]),
+            (6, 5, [19, 20], [[[2,1,1,1]], 
+                              [[4,1], [4,1], [3,2], [3,1,1]]]),
+            (4, 8, [16, 17], [[[2,1,1,1,1,1,1]], 
+                              [[4,1,1,1,1], [4,1,1,1,1], [3,2,1,1,1], [3,1,1,1,1,1]]]),
+            (2, 11, [14], [[[4,1,1,1,1,1,1,1], [3,2,1,1,1,1,1,1], [3,1,1,1,1,1,1,1,1]]])
+
+            
+            # excess 4
+            # TODO
+
+        ]
+        
+        for (genus, n, nonzero_degrees, diagram_lists) in g_n_dim_pairs:
+            cohomology_dim_test_single(genus=genus, n=n, nonzero_degrees=nonzero_degrees, diagram_lists=diagram_lists)
         
     
 def suite():
