@@ -1,4 +1,3 @@
-
 # testing of basis-generation functionality using simple elementary examples and euler-characteristic
 # for testing to be fully rigurous, the "data"-folder should be deleted before running the tests
 
@@ -8,38 +7,46 @@ from sage.all import StandardTableaux
 from WOHairyGC_Pascal import WOHairyComponentGVS, WOHairyAggregatedGVS, WOHairyGVS
 
 
-class TestComponentGeneration(unittest.TestCase):
+class TestBasisGeneration(unittest.TestCase):
 
-
-    @staticmethod
-    def test_basis_len(test_name, basis_len, n_vertices, n_loops, n, n_omega, n_epsilon):
-
-        V = WOHairyComponentGVS(n_vertices=n_vertices, n_loops=n_loops, n=n, n_omega=n_omega, n_epsilon=n_epsilon)
-
-        if basis_len > 0: assert V.is_valid(), test_name
-
-        V.build_basis(ignore_existing_files=True)
-
-        assert V.get_dimension() == basis_len, test_name
-
-
-    def test_double_leg_variants_WOHairyComponentGVS(self):
+    def test_double_leg_variants(self):
         # testing double-leg configurations
-        self.test_basis_len("omega-omega", basis_len=0, n_vertices=0, n_loops=0, n=0, n_omega=2, n_epsilon=0)
-        self.test_basis_len("epsilon-epsilon", basis_len=1, n_vertices=0, n_loops=0, n=0, n_omega=0, n_epsilon=2)
-        self.test_basis_len("omega-epsilon", basis_len=1, n_vertices=0, n_loops=0, n=0, n_omega=1, n_epsilon=1)
-        self.test_basis_len("leg-omega", basis_len=1, n_vertices=0, n_loops=0, n=1, n_omega=1, n_epsilon=0)
-        self.test_basis_len("leg-epsilon", basis_len=1, n_vertices=0, n_loops=0, n=1, n_omega=0, n_epsilon=1)
+        
+        WOHairyComponentGVS(n_vertices=0, n_loops=0, n=0, n_omega=2, n_epsilon=0).test_basis_len("omega-omega", basis_len=0)
+        WOHairyComponentGVS(n_vertices=0, n_loops=0, n=0, n_omega=0, n_epsilon=2).test_basis_len("epsilon-epsilon", basis_len=1)
+        WOHairyComponentGVS(n_vertices=0, n_loops=0, n=0, n_omega=1, n_epsilon=1).test_basis_len("omega-epsilon", basis_len=1)
+        WOHairyComponentGVS(n_vertices=0, n_loops=0, n=1, n_omega=1, n_epsilon=0).test_basis_len("leg-omega", basis_len=1)
+        WOHairyComponentGVS(n_vertices=0, n_loops=0, n=1, n_omega=0, n_epsilon=1).test_basis_len("leg-epsilon", basis_len=1)
 
 
-    def test_single_vertex_variants_WOHairyComponentGVS(self):
+        n_components = 1
+        n_vertices = 0
+        n_double_legs = 1
+
+        WOHairyAggregatedGVS(genus=2, n=0, n_omega=2, n_epsilon=0, n_components=n_components, n_vertices=n_vertices, n_double_legs=n_double_legs).test_basis_len("omega-omega", basis_len=0)
+        WOHairyAggregatedGVS(genus=2, n=0, n_omega=0, n_epsilon=2, n_components=n_components, n_vertices=n_vertices, n_double_legs=n_double_legs).test_basis_len("epsilon-epsilon", basis_len=1)
+        WOHairyAggregatedGVS(genus=2, n=0, n_omega=1, n_epsilon=1, n_components=n_components, n_vertices=n_vertices, n_double_legs=n_double_legs).test_basis_len("omega-epsilon", basis_len=1)
+        WOHairyAggregatedGVS(genus=1, n=1, n_omega=1, n_epsilon=0, n_components=n_components, n_vertices=n_vertices, n_double_legs=n_double_legs).test_basis_len("leg-omega", basis_len=1)
+        WOHairyAggregatedGVS(genus=1, n=1, n_omega=0, n_epsilon=1, n_components=n_components, n_vertices=n_vertices, n_double_legs=n_double_legs).test_basis_len("leg-epsilon", basis_len=1)
+
+
+    def test_single_vertex_variants(self):
         # testing graphs with one vertex
-        self.test_basis_len("eps-omega-eps", basis_len=0, n_vertices=1, n_loops=0, n=0, n_omega=1, n_epsilon=2)
-        self.test_basis_len("3-omega", basis_len=1, n_vertices=1, n_loops=0, n=0, n_omega=3, n_epsilon=0)
-        self.test_basis_len("3-epsilon", basis_len=0, n_vertices=1, n_loops=0, n=0, n_omega=0, n_epsilon=3)
+        WOHairyComponentGVS(n_vertices=1, n_loops=0, n=0, n_omega=1, n_epsilon=2).test_basis_len("eps-omega-eps", basis_len=0)
+        WOHairyComponentGVS(n_vertices=1, n_loops=0, n=0, n_omega=3, n_epsilon=0).test_basis_len("3-omega", basis_len=1)
+        WOHairyComponentGVS(n_vertices=1, n_loops=0, n=0, n_omega=0, n_epsilon=3).test_basis_len("3-epsilon", basis_len=0)
 
 
-    def test_trees_WOHairyComponentGVS(self):
+        n_components = 1
+        n_vertices = 1
+        n_double_legs = 0
+
+        WOHairyAggregatedGVS(genus=3, n=0, n_omega=1, n_epsilon=2, n_components=n_components, n_vertices=n_vertices, n_double_legs=n_double_legs).test_basis_len("eps-omega-eps", basis_len=0)
+        WOHairyAggregatedGVS(genus=3, n=0, n_omega=3, n_epsilon=0, n_components=n_components, n_vertices=n_vertices, n_double_legs=n_double_legs).test_basis_len("3-omega", basis_len=1)
+        WOHairyAggregatedGVS(genus=3, n=0, n_omega=0, n_epsilon=3, n_components=n_components, n_vertices=n_vertices, n_double_legs=n_double_legs).test_basis_len("3-epsilon", basis_len=0)
+
+
+    def test_trees(self):
         # testing trees built from omegas and numbered legs on a single vertex
 
         n_components = 1
@@ -66,145 +73,40 @@ class TestComponentGeneration(unittest.TestCase):
 
                     if n_omega + n >= 3 and n_omega >= 1:
 
-                        V = WOHairyComponentGVS(n_vertices=n_vertices, 
-                                                n_loops=n_loops, 
-                                                n=n, n_omega=n_omega, n_epsilon=n_epsilon)
-
-                        V.build_basis(ignore_existing_files=True)
-
-                        assert V.get_dimension() == 1, (excess, n_omega, n)
-
-
-
-
-
-
-class TestComponentAggregation(unittest.TestCase):
-
-
-    @staticmethod
-    def test_basis_len(test_name, basis_len, inner_edges, n_components, n_vertices, genus, n, n_omega, n_epsilon, n_double_legs):
-
-        V = WOHairyAggregatedGVS(n_components=n_components, n_vertices=n_vertices, genus=genus, n=n, n_omega=n_omega, n_epsilon=n_epsilon, n_double_legs=n_double_legs)
-
-        assert V.n_edges == inner_edges, inner_edges
-
-        if basis_len > 0: assert V.is_valid(), test_name
-
-        V.build_basis(ignore_existing_files=True)
-
-        assert V.get_dimension() == basis_len, test_name
-
-
-    def test_double_leg_variants_WOHairyAggregatedGVS(self):
-        # testing double-leg configurations
-
-        n_components = 1
-        n_vertices = 0
-        n_double_legs = 1
-
-        self.test_basis_len("omega-omega", basis_len=0, inner_edges=0, genus=2, n=0, n_omega=2, n_epsilon=0, n_components=n_components, n_vertices=n_vertices, n_double_legs=n_double_legs)
-        self.test_basis_len("epsilon-epsilon", basis_len=1, inner_edges=0, genus=2, n=0, n_omega=0, n_epsilon=2, n_components=n_components, n_vertices=n_vertices, n_double_legs=n_double_legs)
-        self.test_basis_len("omega-epsilon", basis_len=1, inner_edges=0, genus=2, n=0, n_omega=1, n_epsilon=1, n_components=n_components, n_vertices=n_vertices, n_double_legs=n_double_legs)
-        self.test_basis_len("leg-omega", basis_len=1, inner_edges=0, genus=1, n=1, n_omega=1, n_epsilon=0, n_components=n_components, n_vertices=n_vertices, n_double_legs=n_double_legs)
-        self.test_basis_len("leg-epsilon", basis_len=1, inner_edges=0, genus=1, n=1, n_omega=0, n_epsilon=1, n_components=n_components, n_vertices=n_vertices, n_double_legs=n_double_legs)
-
-
-    def test_single_vertex_variants_WOHairyAggregatedGVS(self):
-        # testing graphs with one vertex
-
-        n_components = 1
-        n_vertices = 1
-        n_double_legs = 0
-
-        self.test_basis_len("eps-omega-eps", basis_len=0, inner_edges=0, genus=3, n=0, n_omega=1, n_epsilon=2, n_components=n_components, n_vertices=n_vertices, n_double_legs=n_double_legs)
-        self.test_basis_len("3-omega", basis_len=1, inner_edges=0, genus=3, n=0, n_omega=3, n_epsilon=0, n_components=n_components, n_vertices=n_vertices, n_double_legs=n_double_legs)
-        self.test_basis_len("3-epsilon", basis_len=0, inner_edges=0, genus=3, n=0, n_omega=0, n_epsilon=3, n_components=n_components, n_vertices=n_vertices, n_double_legs=n_double_legs)
-
-
-    def test_single_mutliple_components_WOHairyAggregatedGVS(self):
-        # testing graphs with multiple components ---
-
-        self.test_basis_len("omega-1 & omega-2", basis_len=1, inner_edges=0, n_components=2, n_vertices=0, genus=1, n=2, n_omega=2, n_epsilon=0, n_double_legs=2)
-        self.test_basis_len("omega-1 & omega-2 & 2x3-omega", basis_len=1, inner_edges=0, n_components=4, n_vertices=2, genus=5, n=2, n_omega=8, n_epsilon=0, n_double_legs=2)
-
-
-
-    def test_trees_WOHairyAggregatedGVS(self):
-        # testing trees built from omegas and numbered legs on a single vertex
-
-        n_components = 1
-        n_vertices = 1
-        n_epsilon = 0
-        n_double_legs = 0
-
-        for excess in range(10):
-
-            for n_omega in range(excess + 4):
-
-                genus = n_omega
-
-                # excess = n_omega - 3 + 2*n -> 2n = excess - n_omega + 3
-                two_n = excess - n_omega + 3
-
-                if two_n % 2 == 0: 
-                    n = int(two_n / 2)
-
-                    if n_omega + n >= 3 and n_omega >= 1:
-
-                        V = WOHairyAggregatedGVS(n_components=n_components, 
+                        WOHairyComponentGVS(n_vertices=n_vertices, 
+                                            n_loops=n_loops, 
+                                            n=n, n_omega=n_omega, n_epsilon=n_epsilon).test_basis_len("test_trees_WOHairyComponentGVS", basis_len=1)
+                        
+                        WOHairyAggregatedGVS(n_components=n_components, 
                                                     n_vertices=n_vertices, 
                                                     genus=genus, 
                                                     n=n, n_omega=n_omega, n_epsilon=n_epsilon,
-                                                    n_double_legs=n_double_legs)
-                        
-                        assert V.excess == excess
-
-                        V.build_basis(ignore_existing_files=True)
-
-                        assert V.get_dimension() == 1, (excess, n_omega, n)
+                                                    n_double_legs=n_double_legs).test_basis_len("test_trees_WOHairyAggregatedGVS", basis_len=1)
 
 
+    def test_mutliple_components(self):
+        # testing graphs with multiple components ---
 
-
-
-class TestFinalGeneration(unittest.TestCase):
-
-    @staticmethod
-    def test_basis_len(test_name, test_basis_len, genus, n, n_omega, degree):
-
-        V = WOHairyGVS(genus=genus, n=n, n_omega=n_omega, degree=degree)
-
-        if test_basis_len > 0: assert V.is_valid(), test_name
-
-        V.build_basis(ignore_existing_files=True)
-
-        assert V.get_dimension() == test_basis_len, test_name
+        WOHairyAggregatedGVS(genus=1, n=2, n_omega=2, n_epsilon=0, n_components=2, n_vertices=0, n_double_legs=2).test_basis_len("omega-1 & omega-2", basis_len=1)
+        WOHairyAggregatedGVS(genus=5, n=2, n_omega=8, n_epsilon=0, n_components=4, n_vertices=2, n_double_legs=2).test_basis_len("omega-1 & omega-2 & 2x3-omega", basis_len=1)
 
 
     def test_bases_by_excess(self):
 
         # testing parameters (g, n, degree) in excess 0 with notrivial bases
-        self.test_basis_len("excess 0: B_1_11", 1, 1, 11, 11, 11)
-        self.test_basis_len("excess 0: B_3_8", 1, 3, 8, 11, 14)
-        self.test_basis_len("excess 0: B_5_5", 1, 5, 5, 11, 17)
-        self.test_basis_len("excess 0: B_7_2", 1, 7, 2, 11, 20)
+        WOHairyGVS(genus=1, n=11, n_omega=11, degree=11).test_basis_len("excess 0: B_1_11", basis_len=1)
+        WOHairyGVS(genus=3, n=8, n_omega=11, degree=14).test_basis_len("excess 0: B_3_8", basis_len=1)
+        WOHairyGVS(genus=5, n=5, n_omega=11, degree=17).test_basis_len("excess 0: B_5_5", basis_len=1)
+        WOHairyGVS(genus=7, n=2, n_omega=11, degree=20).test_basis_len("excess 0: B_7_2", basis_len=1)
 
         # excess 1
-        self.test_basis_len("excess 1: B_2_10", 10, 2, 10, 11, 13)
-        self.test_basis_len("excess 1: B_6_4", 5, 6, 4, 11, 19)
+        WOHairyGVS(genus=2, n=10, n_omega=11, degree=13).test_basis_len("excess 1: B_2_10", basis_len=10)
+        WOHairyGVS(genus=6, n=4, n_omega=11, degree=19).test_basis_len("excess 1: B_6_4", basis_len=5)
 
         # excess 2
-        self.test_basis_len("excess 2: B_7_3", 16, 7, 3, 11, 20)
+        WOHairyGVS(genus=7, n=3, n_omega=11, degree=20).test_basis_len("excess 2: B_7_3", basis_len=16)
 
 
-
-
-
-class TestEulerCharcteristic(unittest.TestCase):
-
-    
-    
 
     @staticmethod
     def test_euler_char(genus, n, coefficients, diagrams, excess):
@@ -285,23 +187,16 @@ class TestEulerCharcteristic(unittest.TestCase):
         
 
 
-
-
 def suite():
     suite = unittest.TestSuite()
 
-    suite.addTest(TestComponentGeneration('test_double_leg_variants_WOHairyComponentGVS'))
-    suite.addTest(TestComponentGeneration('test_single_vertex_variants_WOHairyComponentGVS'))
-    suite.addTest(TestComponentGeneration('test_trees_WOHairyComponentGVS'))
+    suite.addTest(TestBasisGeneration('test_double_leg_variants'))
+    suite.addTest(TestBasisGeneration('test_single_vertex_variants'))
+    suite.addTest(TestBasisGeneration('test_trees'))
+    suite.addTest(TestBasisGeneration('test_mutliple_components'))
+    suite.addTest(TestBasisGeneration('test_bases_by_excess'))
 
-    suite.addTest(TestComponentAggregation('test_double_leg_variants_WOHairyAggregatedGVS'))
-    suite.addTest(TestComponentAggregation('test_single_vertex_variants_WOHairyAggregatedGVS'))
-    suite.addTest(TestComponentAggregation('test_single_mutliple_components_WOHairyAggregatedGVS'))
-    suite.addTest(TestComponentAggregation('test_trees_WOHairyAggregatedGVS'))
-
-    suite.addTest(TestFinalGeneration('test_bases_by_excess'))
-
-    suite.addTest(TestEulerCharcteristic('test_eulerChar'))
+    suite.addTest(TestBasisGeneration('test_eulerChar'))
 
     return suite
 

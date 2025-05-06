@@ -1,4 +1,4 @@
-from WOHairyOperators import WOHairyGC
+from WOHairyGC_Pascal import WOHairyGC
 
 
 

@@ -1,4 +1,4 @@
-from WOHairyBasisGeneration import WOHairyAggregatedGVS
+from WOHairyGC_Pascal import WOHairyAggregatedGVS
 
 
 

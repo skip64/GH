@@ -155,6 +155,14 @@ class WOHairyComponentGVS(CHairyGraphComplex.CHairyGraphVS):
             sgn *= sgn_omega_perm
 
         return sgn
+
+    def test_basis_len(self, test_name, basis_len):
+
+        if basis_len > 0: assert self.is_valid(), test_name
+
+        self.build_basis(ignore_existing_files=True)
+
+        assert self.get_dimension() == basis_len, test_name
     
 
 # helper-functions ---
@@ -854,18 +862,20 @@ class WOHairyGVS(WOHairyAggregatedGVS):
 
 
     @staticmethod
-    def compute_euler_char(genus, n):
+    def compute_euler_char(genus, n, n_omega=11):
 
         euler_char = 0
+        excess = 3*(genus - 1) + 2*n - 2*n_omega
 
-        for n_omega in [11, 12, 13, 14, 15, 16]:
-            
-            omega_excess = 3*(genus-1) + 2*n - 2*n_omega
+        # we add up the euler-characterisitcs of the graph-complex for omega=11,12,13,14,...
+        # with each additional omega, the excess decreases by 2
+        # further there exist no graphs with negative excess
+        # hence we can stop the loop if the excess is negative
+        while excess >= 0:
 
-            if omega_excess < 0: break
             print("---")
             print("n_omega:", n_omega)
-            print("excess:", omega_excess)
+            print("excess:", excess)
 
             # degree lower-bound
             # n_vertices = degree - 22 + n_omega - genus + 1 >= 0
@@ -887,6 +897,12 @@ class WOHairyGVS(WOHairyAggregatedGVS):
 
             print("contribution:", euler_char_omega)
             euler_char += euler_char_omega
+
+
+            # next iteration
+            n_omega += 1
+            excess = 3*(genus - 1) + 2*n - 2*n_omega
+
 
         return euler_char
     

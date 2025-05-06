@@ -1,4 +1,4 @@
-from WOHairyBasisGeneration import WOHairyComponentGVS
+from WOHairyGC_Pascal import WOHairyComponentGVS
 
 
 # Instance with 5 vertices, 2 loops, 4 hairs

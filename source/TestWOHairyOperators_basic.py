@@ -1,9 +1,6 @@
 # testing of operator-functionality
 # for testing to be fully rigurous, the "data"-folder should be deleted before running the tests
 
-
-import unittest
-from WOHairyOperators import WOHairyGC
 from sage.all import *
 import Shared
 import matplotlib.pyplot as plt

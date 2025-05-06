@@ -1,4 +1,4 @@
-from WOHairyBasisGeneration import WOHairyFinalGVS
+from WOHairyGC_Pascal import WOHairyFinalGVS
 
 # Manual Testing
 
