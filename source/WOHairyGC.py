@@ -40,7 +40,8 @@ import os
 import Shared
 from copy import copy
 import GraphComplex
-
+import numpy as np
+import csv
 
 # ------- Graph Vector Space --------
 class WOHairyComponentGVS(CHairyGraphComplex.CHairyGraphVS):
@@ -1422,6 +1423,7 @@ class WOHairyGC(GraphComplex.GraphComplex):
         return '<%s graph complex with %s>' % (graph_type, str(self.sub_type))
     
 
+
     @staticmethod
     def DSquareTest_single(operator, genus, n, n_omega=11):
 
@@ -1550,9 +1552,107 @@ class WOHairyGC(GraphComplex.GraphComplex):
         cohom_dim = d - r1 - r2 + r3
 
         assert cohom_dim >= 0
-        if cohom_dim > 0: print("degree", degree, ":", cohom_dim)
+        if cohom_dim > 0: print("k =", degree, ":", cohom_dim)
 
         return cohom_dim
+
+
+    @staticmethod
+    def max_basis_dimension(genus, n, n_omega=11):
+
+        data = []
+ 
+        excess = 3*(genus - 1) + 2*n - 2*n_omega
+        if excess < 0: return 0
+
+        deg_min = 22 - n_omega + genus - 1
+        deg_max = 3*genus + n + 19 - 2*n_omega
+
+        assert deg_max >= deg_min, "deg_max is cannot be correct!"
+
+        max_dim = 0
+
+        for degree in range(deg_min, deg_max + 1):
+            
+            #print(genus, n, n_omega, degree)
+            V = WOHairyGVS(genus=genus, n=n, n_omega=n_omega, degree=degree)
+
+            V.build_basis(ignore_existing_files=False)
+
+            max_dim = max(max_dim, V.get_dimension())
+            
+            if degree > deg_max: assert V.get_dimension() == 0, "deg_max is cannot be correct!"
+
+        return max_dim
+
+
+    @staticmethod
+    # model from WOHairyGC_get_dimension_predictor.py
+    def max_basis_dimension_estimate(genus, n):
+        coefficients = [3.31278787, 2.70597316]
+        intercept = -28.540313445876578
+        return np.exp(coefficients[0]*genus + coefficients[1]*n + intercept)
+
+
+    @staticmethod
+    def compute_cohomology_dim_all(g_max=20, n_max=20, n_omega=11):
+
+        jobs = []
+        for genus in range(g_max + 1):
+            for n in range(n_max + 1):
+                basis_estimate = WOHairyGC.max_basis_dimension_estimate(genus, n)
+                jobs.append((genus, n, basis_estimate))
+
+        table = [["?" for _ in range(n_max+2)] for _ in range(g_max+2)]
+        table[0][0] = "g / n"
+        for n in range(0, n_max+1): 
+            table[0][n+1] = str(n)
+        for g in range(0, g_max+1):
+            table[g+1][0] = str(g)
+
+        # sort jobs by basis estimate
+        jobs.sort(key=lambda x: x[2])
+        print([(job[0], job[1]) for job in jobs])
+
+        for genus, n, basis_estimate in jobs:
+
+            print("(genus, n) = ", (genus, n))
+            excess = 3*(genus - 1) + 2*n - 2*n_omega
+            print("excess:", excess)
+
+            deg_min = 22 - n_omega + genus - 1
+            deg_max = 3*genus + n + 19 - 2*n_omega
+            degree_range = range(deg_min, deg_max+3)
+
+            non_zero_dim_list = []
+            for degree in degree_range:
+
+                cohom_dim = WOHairyGC.compute_cohomology_dim(degree=degree, genus=genus, n=n, n_omega=n_omega)
+
+                if cohom_dim > 0:
+                    non_zero_dim_list.append((degree, cohom_dim))
+
+            if len(non_zero_dim_list) > 0:
+                table[genus+1][n+1] = ""
+                for i, (degree, cohom_dim) in enumerate(non_zero_dim_list):
+                    table[genus+1][n+1] += "k=" + str(degree) + ": " + str(cohom_dim)
+
+                    if i < len(non_zero_dim_list) - 1:
+                        table[genus+1][n+1] += "\n"
+            else:
+                table[genus+1][n+1] = "0"
+
+
+            # Save the table to a CSV file
+            with open("table.csv", "w", newline="") as file:
+                writer = csv.writer(file)
+                writer.writerows(table)
+
+            #print("Table saved to 'table.csv'")
+
+
+
+
 
 
 

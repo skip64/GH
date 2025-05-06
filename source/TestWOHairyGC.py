@@ -241,8 +241,8 @@ class TestOperators(unittest.TestCase):
         print("(genus, n) = ", (genus, n))
 
         deg_min = 22 - n_omega + genus - 1
-
-        degree_range = range(deg_min, deg_min+15)
+        deg_max = 3*genus + n + 19 - 2*n_omega
+        degree_range = range(deg_min, deg_max+3)
         
         for degree in degree_range:
 
@@ -313,6 +313,8 @@ class TestOperators(unittest.TestCase):
         
         for (genus, n, nonzero_degrees, diagram_lists) in g_n_dim_pairs:
             TestOperators.cohomology_dim_test_single(genus=genus, n=n, nonzero_degrees=nonzero_degrees, diagram_lists=diagram_lists)
+
+
         
     
 
