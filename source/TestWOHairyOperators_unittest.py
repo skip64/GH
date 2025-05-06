@@ -3,14 +3,12 @@
 
 
 import unittest
-from WOHairyOperators import WOHairyGC, ContractEdgesGO, EpsToOmegaGO, WOHairyFinalGVS
+from WOHairyGC_Pascal import WOHairyGC
 from sage.all import *
-import itertools
-import Parameters
-import Shared
 from sage.all import StandardTableaux
 
 
+# TODO: put into WOHairyGC_Pascal with assertions
 def DSquareTest_single(operator, genus, n, n_omega=11):
 
     deg_min = 22 - n_omega + genus - 1
@@ -34,55 +32,6 @@ def DSquareTest_single(operator, genus, n, n_omega=11):
     GC.square_zero_test()
 
 
-def Anticomm_Test_single(genus, n, n_omega=11, eps=Parameters.square_zero_test_eps):
-
-    deg_min = 22 - n_omega + genus - 1
-
-    excess = 3*(genus - 1) + 2*n - 2*n_omega
-    assert excess >= 0
-    assert isinstance(excess, int)
-    n_omega_max = n_omega + (excess // 2)
-    assert isinstance(n_omega_max, int)
-
-    GC = WOHairyGC(genus_range=[genus], 
-            n_range=[n], 
-            omega_range=range(n_omega, n_omega_max + 1), 
-            degree_range=range(deg_min, deg_min+15), 
-            differentials=['contract', 'epstoomega'])
-
-    GC.build_basis(ignore_existing_files=False)
-    GC.build_matrix(ignore_existing_files=False)
-
-    print(GC.operator_collection_list)
-    assert len(GC.operator_collection_list) == 2
-
-    dif_1 = GC.operator_collection_list[0]
-    dif_2 = GC.operator_collection_list[1]
-    op1_matrix_list = dif_1.op_matrix_list
-    op2_matrix_list = dif_2.op_matrix_list
-    
-    for (op1_1, op1_2, op2_1, op2_2) in itertools.product(op1_matrix_list, op1_matrix_list, op2_matrix_list, op2_matrix_list):
-        if op1_1.get_domain() == op2_2.get_domain() and op1_2.get_target() == op2_1.get_target() \
-            and op1_1.get_target() == op2_1.get_domain() and op2_2.get_target() == op1_2.get_domain():
-            if (not (op1_1.is_valid() and op1_2.is_valid() and op2_1.is_valid() and op2_2.is_valid())) \
-                or ((op1_1.is_trivial() or op2_1.is_trivial()) and (op1_2.is_trivial() or op2_2.is_trivial())):
-                #print('trivial success')
-                pass
-
-            else: 
-                M1_1 = op1_1.get_matrix()
-                M1_2 = op1_2.get_matrix()
-                M2_1 = op2_1.get_matrix()
-                M2_2 = op2_2.get_matrix()
-
-                product_1 = M2_1 * M1_1
-                product_2 = M1_2 * M2_2
-
-                if Shared.matrix_norm(product_1 - product_2) < eps:
-                    print('success')
-                else:
-                    assert False, 'Anitcomm-Test failed!'
-
 
 def cohomology_dim_test_single(genus, n, nonzero_degrees, diagram_lists, n_omega = 11):
 
@@ -98,34 +47,7 @@ def cohomology_dim_test_single(genus, n, nonzero_degrees, diagram_lists, n_omega
     cohomdict = {}
     for degree in degree_range:
 
-        D_Cont_deg = ContractEdgesGO.generate_operator(degree=degree, genus=genus, n=n, n_omega=n_omega)
-        D_Cont_deg_p1 = ContractEdgesGO.generate_operator(degree=degree+1, genus=genus, n=n, n_omega=n_omega)
-        D_eps_deg = EpsToOmegaGO.generate_operator(degree=degree, genus=genus, n=n, n_omega=n_omega)
-        D_eps_deg_p1 = EpsToOmegaGO.generate_operator(degree=degree+1, genus=genus, n=n, n_omega=n_omega)
-
-        for op in [D_Cont_deg, D_Cont_deg_p1, D_eps_deg, D_eps_deg_p1]:
-            op.domain.build_basis(skip_existing_files=False)
-            op.target.build_basis(skip_existing_files=False)
-
-            op.build_matrix(skip_existing_files=False)
-
-        D_Cont_deg_mat = D_Cont_deg.get_matrix()
-        D_Cont_deg_p1_mat = D_Cont_deg_p1.get_matrix()
-        D_eps_deg_mat = D_eps_deg.get_matrix()
-        D_eps_deg_p1_mat = D_eps_deg_p1.get_matrix()
-
-        assert D_Cont_deg.domain == D_eps_deg.domain
-        deg_double_mat = D_Cont_deg_mat.stack(D_eps_deg_mat)
-
-        assert D_Cont_deg_p1.domain == D_eps_deg_p1.domain
-        deg_p1_double_mat = D_Cont_deg_p1_mat.stack(D_eps_deg_p1_mat) 
-        
-        d = WOHairyFinalGVS(genus=genus, n=n, n_omega=n_omega, degree=degree).get_dimension()
-        r1 = deg_double_mat.rank()
-        r2 = deg_p1_double_mat.rank()
-        r3 = D_eps_deg_p1_mat.rank()
-
-        cohom_dim = d - r1 - r2 + r3
+        cohom_dim = WOHairyGC.compute_cohomology_dim(degree=degree, genus=genus, n=n, n_omega=n_omega)
         
         if cohom_dim == 0:
             assert degree not in nonzero_degrees, "(g,n) = "+ str((genus, n)) + " degree: " + str(degree)
@@ -166,8 +88,7 @@ g_n_pairs = [
             (8, 1), (6, 4), (4, 7), (2, 10),
             (9, 0), (7, 3), (5, 6), (3, 9), (1, 12),
             (8, 2), (6, 5), (4, 8), (2, 11),
-            (9, 1), (7, 4), (5, 7), (3, 10)
-            #,(1, 13),
+            (9, 1), (7, 4), (5, 7), (3, 10),(1, 13),
             #(10, 0), (8, 3), (9, 2), (10, 1), (11, 0)
             ]
 
@@ -185,7 +106,7 @@ class TestOperators(unittest.TestCase):
 
     def Anticommutativity_Test(self):
         for (genus, n) in g_n_pairs:
-            Anticomm_Test_single(genus=genus, n=n)
+            WOHairyGC.Anticomm_Test_single(genus=genus, n=n)
 
 
 
@@ -231,7 +152,7 @@ class TestOperators(unittest.TestCase):
                               [[5,1,1], [5,1,1], [5,1,1], [4,2,1], [4,1,1,1], [3,3,1], [3,3,1], [3,2,1,1], [3,2,1,1], [2,2,1,1,1], [2,2,1,1,1]]]),
             (3, 10, [15, 16], [[[3,1,1,1,1,1,1,1]], 
                               [[5,1,1,1,1,1], [5,1,1,1,1,1], [4,2,1,1,1,1], [4,1,1,1,1,1,1], [3,3,1,1,1,1], [3,3,1,1,1,1], [3,2,1,1,1,1,1], [3,2,1,1,1,1,1], [2,2,1,1,1,1,1,1], [2,2,1,1,1,1,1,1]]]),
-            #(1, 13, [13], [[[5,1,1,1,1,1,1,1,1], [3,3,1,1,1,1,1,1,1], [3,2,1,1,1,1,1,1,1,1], [2,2,1,1,1,1,1,1,1,1,1]]]),
+            (1, 13, [13], [[[5,1,1,1,1,1,1,1,1], [3,3,1,1,1,1,1,1,1], [3,2,1,1,1,1,1,1,1,1], [2,2,1,1,1,1,1,1,1,1,1]]]),
 
         ]
         

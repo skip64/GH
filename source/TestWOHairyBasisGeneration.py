@@ -5,7 +5,7 @@
 
 import unittest
 from sage.all import StandardTableaux
-from WOHairyBasisGeneration import WOHairyComponentGVS, WOHairyAggregatedGVS, WOHairyFinalGVS
+from WOHairyGC_Pascal import WOHairyComponentGVS, WOHairyAggregatedGVS, WOHairyGVS
 
 
 class TestComponentGeneration(unittest.TestCase):
@@ -173,7 +173,7 @@ class TestFinalGeneration(unittest.TestCase):
     @staticmethod
     def test_basis_len(test_name, test_basis_len, genus, n, n_omega, degree):
 
-        V = WOHairyFinalGVS(genus=genus, n=n, n_omega=n_omega, degree=degree)
+        V = WOHairyGVS(genus=genus, n=n, n_omega=n_omega, degree=degree)
 
         if test_basis_len > 0: assert V.is_valid(), test_name
 
@@ -203,42 +203,7 @@ class TestFinalGeneration(unittest.TestCase):
 
 class TestEulerCharcteristic(unittest.TestCase):
 
-    @staticmethod
-    def compute_euler_char(genus, n):
-
-        euler_char = 0
-
-        for n_omega in [11, 12, 13, 14, 15, 16]:
-            
-            omega_excess = 3*(genus-1) + 2*n - 2*n_omega
-
-            if omega_excess < 0: break
-            print("---")
-            print("n_omega:", n_omega)
-            print("excess:", omega_excess)
-
-            # degree lower-bound
-            # n_vertices = degree - 22 + n_omega - genus + 1 >= 0
-            # -> degree >= 22 - n_omega + genus - 1
-            deg_min = 22 - n_omega + genus - 1
-
-            euler_char_omega = 0
-
-            for degree in range(deg_min, deg_min+15):
-                
-                #print(genus, n, n_omega, degree)
-                V = WOHairyFinalGVS(genus=genus, n=n, n_omega=n_omega, degree=degree)
-
-                V.build_basis(ignore_existing_files=False)
-
-                print("degree:", degree, " dimension:", V.get_dimension())
-                
-                euler_char_omega += (-1)**degree * V.get_dimension()
-
-            print("contribution:", euler_char_omega)
-            euler_char += euler_char_omega
-
-        return euler_char
+    
     
 
     @staticmethod
@@ -251,7 +216,7 @@ class TestEulerCharcteristic(unittest.TestCase):
         if computed_excess < 0: assert excess < 0
         else: assert computed_excess == excess
 
-        euler_char = TestEulerCharcteristic.compute_euler_char(genus, n)
+        euler_char = WOHairyGVS.compute_euler_char(genus, n)
         
         assert len(coefficients) == len(diagrams)
 
