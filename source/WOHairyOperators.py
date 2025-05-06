@@ -14,13 +14,6 @@ import GraphComplex
 graph_type = "wohairy_final"
 
 
-"""
-Implementation-Notes:
-- do not need sub_type: (even / odd) -> will try to remove...
-"""
-
-
-
 class WOHairyGraphSumVS(GraphVectorSpace.SumVectorSpace):
     """Direct sum of graph vector spaces with specified number of omega hairs.
     """
@@ -152,29 +145,6 @@ class EpsToOmegaGO(SymmetricGraphComplex.SymmetricGraphOperator):
     def get_work_estimate(self):
         return 0
 
-    def restrict_to_isotypical_component(self, rep_index):
-        return RestrictedEpsToOmegaGO(self, rep_index)
-
-
-
-class RestrictedEpsToOmegaGO(SymmetricGraphComplex.SymmetricRestrictedOperatorMatrix):
-    # def __init__(opD, opP):
-
-    def get_matrix_file_path(self):
-        s = "contractD%d_%d_%d_r%d.txt" % (
-            self.domain.vs.get_ordered_param_dict().get_value_tuple() + (self.rep_index,))
-        return os.path.join(Parameters.data_dir, graph_type, self.opD.sub_type, s)
-
-    def get_rank_file_path(self):
-        s = "contractD%d_%d_%d_r%d_rank.txt" % (
-            self.domain.vs.get_ordered_param_dict().get_value_tuple() + (self.rep_index,))
-        return os.path.join(Parameters.data_dir, graph_type, self.opD.sub_type, s)
-
-    def get_work_estimate(self):
-        return self.opD.get_work_estimate()
-
-    def is_match(self, domain, target):
-        return EpsToOmegaGO.is_match(domain.vs, target.vs) and domain.rep_index == target.rep_index
 
 
 class EpsToOmegaD(GraphOperator.Differential):
@@ -209,21 +179,6 @@ class EpsToOmegaD(GraphOperator.Differential):
 
 
 
-class RestrictedEpsToOmegaD(SymmetricGraphComplex.SymmetricDifferential):
-
-    def get_type(self):
-        return 'isotypical epstoomega'
-
-    def get_cohomology_plot_path(self):
-        sub_type = self.diff.sum_vector_space.sub_type
-        s = "cohomology_dim_epstoomega_D_iso_%s_%s" % (graph_type, sub_type)
-        return os.path.join(Parameters.plots_dir, graph_type, sub_type, s)
-
-    def get_info_plot_path(self):
-        sub_type = self.diff.sum_vector_space.sub_type
-        s = "info_epstoomega_D_iso_%s_%s" % (graph_type, sub_type)
-        return os.path.join(Parameters.plots_dir, graph_type, sub_type, s)
-    
 
 
 
@@ -431,28 +386,6 @@ class ContractEdgesGO(SymmetricGraphComplex.SymmetricGraphOperator):
         # TODO
         return 0
 
-    def restrict_to_isotypical_component(self, rep_index):
-        return RestrictedContractEdgesGO(self, rep_index)
-
-
-class RestrictedContractEdgesGO(SymmetricGraphComplex.SymmetricRestrictedOperatorMatrix):
-    # def __init__(opD, opP):
-
-    def get_matrix_file_path(self):
-        s = "contractD%d_%d_%d_r%d.txt" % (
-            self.domain.vs.get_ordered_param_dict().get_value_tuple() + (self.rep_index,))
-        return os.path.join(Parameters.data_dir, graph_type, self.opD.sub_type, s)
-
-    def get_rank_file_path(self):
-        s = "contractD%d_%d_%d_r%d_rank.txt" % (
-            self.domain.vs.get_ordered_param_dict().get_value_tuple() + (self.rep_index,))
-        return os.path.join(Parameters.data_dir, graph_type, self.opD.sub_type, s)
-
-    def get_work_estimate(self):
-        return self.opD.get_work_estimate()
-
-    def is_match(self, domain, target):
-        return ContractEdgesGO.is_match(domain.vs, target.vs) and domain.rep_index == target.rep_index
 
 
 class ContractEdgesD(GraphOperator.Differential):
@@ -487,21 +420,6 @@ class ContractEdgesD(GraphOperator.Differential):
 
 
 
-
-class RestrictedContractEdgesD(SymmetricGraphComplex.SymmetricDifferential):
-
-    def get_type(self):
-        return 'isotypical contract edges'
-
-    def get_cohomology_plot_path(self):
-        sub_type = self.diff.sum_vector_space.sub_type
-        s = "cohomology_dim_contract_D_iso_%s_%s" % (graph_type, sub_type)
-        return os.path.join(Parameters.plots_dir, graph_type, sub_type, s)
-
-    def get_info_plot_path(self):
-        sub_type = self.diff.sum_vector_space.sub_type
-        s = "info_contract_D_iso_%s_%s" % (graph_type, sub_type)
-        return os.path.join(Parameters.plots_dir, graph_type, sub_type, s)
 
 
 
@@ -575,13 +493,7 @@ class WOHairyGC(GraphComplex.GraphComplex):
 
         if 'contract' in differentials:
             differential_list.append(contract_edges_dif)
-
-        if 'contract_iso' in differentials:
-            contract_iso_edges_dif = RestrictedContractEdgesD(
-                contract_edges_dif)
-            differential_list.append(contract_iso_edges_dif)
-            print("Attention: contract_iso operates on nonzero cohomology entries only, so they need to be computed before!")
-
+        
         if 'epstoomega' in differentials:
             differential_list.append(epstoomega_dif)
         super(WOHairyGC, self).__init__(sum_vector_space, differential_list)

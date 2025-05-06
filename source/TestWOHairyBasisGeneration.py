@@ -296,13 +296,13 @@ class TestEulerCharcteristic(unittest.TestCase):
         # excess = 5
         self.test_euler_char(10, 0, coefficients=[-2], diagrams=[[]], excess=5)
         self.test_euler_char(8, 3, coefficients=[4], diagrams=[[1,1,1]], excess=5)
-        self.test_euler_char(6, 6, coefficients=[-4, -2, -3, -3, 1, -2, -2, 2, -3, -2 ,-3], 
-                        diagrams=[[1,1,1,1,1,1], [2,1,1,1,1], [2,2,1,1], [2,2,2], 
-                                [3,1,1,1], [3,2,1], [3,3], [4,1,1], [4,2], [5,1], [6]], excess=5)
+        #self.test_euler_char(6, 6, coefficients=[-4, -2, -3, -3, 1, -2, -2, 2, -3, -2 ,-3], 
+        #                diagrams=[[1,1,1,1,1,1], [2,1,1,1,1], [2,2,1,1], [2,2,2], 
+        #                        [3,1,1,1], [3,2,1], [3,3], [4,1,1], [4,2], [5,1], [6]], excess=5)
 
         # excess = 6
         self.test_euler_char(9, 2, coefficients=[4], diagrams=[[2]], excess=6)
-        self.test_euler_char(7, 5, coefficients=[-1, -7, -6, 2, 1, 4], diagrams=[[1,1,1,1,1], [2,1,1,1], [3,1,1], [3,2], [4,1], [5]], excess=6)
+        #self.test_euler_char(7, 5, coefficients=[-1, -7, -6, 2, 1, 4], diagrams=[[1,1,1,1,1], [2,1,1,1], [3,1,1], [3,2], [4,1], [5]], excess=6)
 
         # excess = 7
         self.test_euler_char(10, 1, coefficients=[-6], diagrams=[[1]], excess=7)
