@@ -1519,6 +1519,7 @@ class WOHairyGC(GraphComplex.GraphComplex):
 
     @staticmethod
     def compute_cohomology_dim(degree, genus, n, n_omega=11):
+
         D_Cont_deg = ContractEdgesGO.generate_operator(degree=degree, genus=genus, n=n, n_omega=n_omega)
         D_Cont_deg_p1 = ContractEdgesGO.generate_operator(degree=degree+1, genus=genus, n=n, n_omega=n_omega)
         D_eps_deg = EpsToOmegaGO.generate_operator(degree=degree, genus=genus, n=n, n_omega=n_omega)
@@ -1548,7 +1549,14 @@ class WOHairyGC(GraphComplex.GraphComplex):
 
         cohom_dim = d - r1 - r2 + r3
 
+        assert cohom_dim >= 0
+        if cohom_dim > 0: print("degree", degree, ":", cohom_dim)
+
         return cohom_dim
+
+
+
+
     
 
 

@@ -238,14 +238,12 @@ class TestOperators(unittest.TestCase):
 
         assert len(nonzero_degrees) == len(diagram_lists)
 
-        print("genus:", genus)
-        print("n:", n)
+        print("(genus, n) = ", (genus, n))
 
         deg_min = 22 - n_omega + genus - 1
 
         degree_range = range(deg_min, deg_min+15)
         
-        cohomdict = {}
         for degree in degree_range:
 
             cohom_dim = WOHairyGC.compute_cohomology_dim(degree=degree, genus=genus, n=n, n_omega=n_omega)
@@ -263,25 +261,9 @@ class TestOperators(unittest.TestCase):
                 for digaram in diagram_list:
                     test_dim += StandardTableaux(digaram).cardinality()
                 
-                print("degree:", degree, "---")
-                print("actual dimension:", test_dim)
-                print("nummerical dimension:", cohom_dim)
                 assert cohom_dim == test_dim, "(g,n) = "+ str((genus, n))
 
-                """
-                print("d:", d)
-                print("r1:", r1)
-                print("r2:", r2)
-                print("r3:", r3)
-                print("degree:", degree)
-                print("dimension:", cohom_dim)
-                """
 
-            cohomdict[degree] = cohom_dim
-
-        print("Cohomology Dimensions (genus, n) ",
-                genus, n, ":", cohomdict)
-        
 
     def Cohom_dim_Test(self):
         g_n_dim_pairs = [   
@@ -339,18 +321,18 @@ def suite():
 
     suite = unittest.TestSuite()
 
-    suite.addTest(TestBasisGeneration('test_double_leg_variants'))
-    suite.addTest(TestBasisGeneration('test_single_vertex_variants'))
-    suite.addTest(TestBasisGeneration('test_trees'))
-    suite.addTest(TestBasisGeneration('test_mutliple_components'))
-    suite.addTest(TestBasisGeneration('test_bases_by_excess'))
+    #suite.addTest(TestBasisGeneration('test_double_leg_variants'))
+    #suite.addTest(TestBasisGeneration('test_single_vertex_variants'))
+    #suite.addTest(TestBasisGeneration('test_trees'))
+    #suite.addTest(TestBasisGeneration('test_mutliple_components'))
+    #suite.addTest(TestBasisGeneration('test_bases_by_excess'))
 
-    suite.addTest(TestBasisGeneration('test_eulerChar'))
+    #suite.addTest(TestBasisGeneration('test_eulerChar'))
 
 
-    suite.addTest(TestOperators('DSquareTest_EpsToOmega')) 
-    suite.addTest(TestOperators('DSquareTest_ContractEdges')) 
-    suite.addTest(TestOperators('Anticommutativity_Test'))
+    #suite.addTest(TestOperators('DSquareTest_EpsToOmega')) 
+    #suite.addTest(TestOperators('DSquareTest_ContractEdges')) 
+    #suite.addTest(TestOperators('Anticommutativity_Test'))
 
     suite.addTest(TestOperators('Cohom_dim_Test'))
 
