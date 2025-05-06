@@ -1,11 +1,11 @@
-from WOHairyGC_Pascal import WOHairyFinalGVS
+from WOHairyGC import WOHairyGVS
 
 # Manual Testing
 
 # big components
 #V = WOHairyFinalGraphComplex.WOHairyFinalGVS(genus=11, n=0, n_omega=11, degree=30)
 
-V = WOHairyFinalGVS(genus=9, n=0, n_omega=11, degree=22)
+V = WOHairyGVS(genus=9, n=1, n_omega=11, degree=22)
 
 print("is valid: " + str(V.is_valid()))
 print("excess:", V.excess)

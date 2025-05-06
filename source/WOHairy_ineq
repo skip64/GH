@@ -1,0 +1,82 @@
+"""
+self.n_components = n_components
+self.n = n
+self.n_vertices = n_vertices
+self.genus = genus
+self.n_omega = n_omega
+self.n_epsilon = n_epsilon
+self.n_double_legs = n_double_legs
+self.n_hairs = self.n + self.n_omega + self.n_epsilon
+self.total_num_vertices = self.n_vertices + self.n_hairs
+self.excess = 3*(self.genus - 1) + 2*self.n - 2*self.n_omega
+
+# computation of the inner edges by genus
+# g = (E-V+num_components) + 1 of the contracted graph:
+# g = (n_edges + n_hairs - n_double_legs) - (n_vertices + n + 1) + 1 + 1 
+#   = n_edges + n_hairs - n_vertices - n - n_double_legs + num_components
+self.n_edges = genus + n_vertices + n + n_double_legs - self.n_hairs - 1
+
+# loop-order of the inner graph
+self.n_loops = self.n_edges - n_vertices + (self.n_components - self.n_double_legs)
+
+
+
+# possible values
+l = self.n_components >= 1 \
+and self.n_vertices >= 0 \
+and self.genus >= 1 \
+and self.n >= 0 \
+and self.n_omega >= 0 \
+and self.n_epsilon >= 0 \
+and self.n_double_legs >= 0 \
+and self.n_hairs >= 0 \
+and self.n_edges >= 0 \
+and self.n_loops >= 0 \
+and self.excess >= 0
+#print("is_valid() after value-checking:", l)
+# each n_double_leg corresponds to a connected component 
+l = l and self.n_double_legs <= self.n_components
+# number of components which are not double-legs: self.n_components - self.n_double_legs
+l = l and self.n_vertices >= self.n_components - self.n_double_legs
+# If all components are double-legs:
+if self.n_components == self.n_double_legs: 
+        l = l and self.n_vertices == 0
+        l = l and self.n_hairs == 2*self.n_double_legs
+        l = l and self.n_loops == 0
+        l = l and self.n_edges == 0
+
+# each connected component must at least contain one omega or epsilon
+l = l and self.n_omega + self.n_epsilon >= self.n_components
+# At least trivalent internal vertices. (each double_leg removes two hair-decorations from the equation)
+l = l and (3 * self.n_vertices <= 2 * self.n_edges + (self.n_hairs - 2*self.n_double_legs)) 
+# At most a full graph.
+l = l and self.n_edges <= (self.n_vertices) * (self.n_vertices - 1) / 2
+# each double-leg contains exactly two hair lables (which are not inner vertices)
+l = l and self.n_double_legs <= (self.total_num_vertices - self.n_vertices) / 2
+# each other connected component contains at least one vertex
+l = l and self.n_components - self.n_double_legs <= self.total_num_vertices - 2*self.n_double_legs
+# due to symmetry reasons, each vertex can have maximally one epsilon-hair attached to it otherwise the graph is equal to zero
+l = l and self.n_epsilon <= 2*self.n_double_legs + self.n_vertices
+# cannot have more eps than excess
+l = l and self.n_epsilon <= self.excess
+
+# test for single-vertex trees with omega and numbered hairs
+if self.n_vertices == 1 and self.n_components == 1 and self.n_epsilon == 0:
+        l = l and self.n_double_legs == 0
+        l = l and (self.excess - self.n_omega + 3) % 2 == 0
+        l = l and self.excess == self.n_omega - 3 + 2*self.n
+        l = l and self.n_omega + self.n >= 3
+
+
+# lemma: for excess <= 4, the loop order is 0
+if self.excess <= 4: l = l and self.n_loops == 0
+
+
+self.genus = genus
+self.n = n
+self.n_omega = n_omega
+self.degree = degree   
+
+self.n_vertices = degree - 22 + n_omega - genus + 1
+self.excess = 3*genus + 2*n - 25 
+"""

@@ -1,4 +1,4 @@
-from WOHairyGC_Pascal import WOHairyGC
+from WOHairyGC import WOHairyGC
 
 
 

@@ -882,9 +882,23 @@ class WOHairyGVS(WOHairyAggregatedGVS):
             # -> degree >= 22 - n_omega + genus - 1
             deg_min = 22 - n_omega + genus - 1
 
+            # degree upper bound: internal vertices have valcence 3
+            # 3 * n_vertices <= 2 * n_edges + (n_hairs - 2*n_double_legs))
+            # n_edges = genus + n_vertices + n + n_double_legs - n_hairs - 1
+            # -> 3 * n_vertices <= 2 * (genus + n_vertices + n + n_double_legs - n_hairs - 1) + (n_hairs - 2*n_double_legs)
+            # -> n_vertices <= 2*genus + 2*n - n_hairs - 2 = 2*genus + n - n_omega - n_epsilon - 2 <= 2*genus + n - n_omega - 2
+            # n_vertices = degree - 22 + n_omega - genus + 1
+            # -> degree = n_vertices + 22 - n_omega + genus - 1
+            # -> degree <= 3*genus + 2*n - n_hairs + 19 - n_omega  
+            # -> degree <= 3*genus + 2*n + 19 - 2*n_omega - n - n_epsilon
+            # -> degree <= 3*genus + n + 19 - 2*n_omega
+            deg_max = 3*genus + n + 19 - 2*n_omega
+
+            assert deg_max >= deg_min, "deg_max is cannot be correct!"
+
             euler_char_omega = 0
 
-            for degree in range(deg_min, deg_min+15):
+            for degree in range(deg_min, deg_max + 1):
                 
                 #print(genus, n, n_omega, degree)
                 V = WOHairyGVS(genus=genus, n=n, n_omega=n_omega, degree=degree)
@@ -894,6 +908,8 @@ class WOHairyGVS(WOHairyAggregatedGVS):
                 print("degree:", degree, " dimension:", V.get_dimension())
                 
                 euler_char_omega += (-1)**degree * V.get_dimension()
+
+                if degree > deg_max: assert V.get_dimension() == 0, "deg_max is cannot be correct!"
 
             print("contribution:", euler_char_omega)
             euler_char += euler_char_omega
@@ -1404,6 +1420,53 @@ class WOHairyGC(GraphComplex.GraphComplex):
 
     def __str__(self):
         return '<%s graph complex with %s>' % (graph_type, str(self.sub_type))
+    
+
+    @staticmethod
+    def DSquareTest_single(operator, genus, n, n_omega=11):
+
+        assert operator in ['contract', 'epstoomega']
+
+        deg_min = 22 - n_omega + genus - 1
+
+        excess = 3*(genus - 1) + 2*n - 2*n_omega
+        assert excess >= 0
+        n_omega_max = n_omega + (excess // 2)
+        deg_max = 3*genus + n + 19 - 2*n_omega
+
+        GC = WOHairyGC(genus_range=[genus], 
+                n_range=[n], 
+                omega_range=range(n_omega, n_omega_max + 1), 
+                degree_range=range(deg_min, deg_max + 1), 
+                differentials=[operator])
+
+        GC.build_basis(ignore_existing_files=False)
+        GC.build_matrix(ignore_existing_files=True)
+
+
+        for dif in GC.operator_collection_list:
+
+            succ_l = 0
+            triv_l = 0
+            
+            for (op1, op2) in itertools.permutations(dif.op_matrix_list, 2):
+
+                if op1.get_target() == op2.get_domain():
+                    # A composable pair is found
+
+                    pair = (op1, op2)
+                    res = dif._square_zero_test_for_pair(pair, eps=Parameters.square_zero_test_eps)
+
+                    if res == 'triv':
+                        triv_l += 1
+                    elif res == 'succ':
+                        succ_l += 1
+                    else:
+                        assert False, "d_square zero test failed for %s" % str(pair)
+
+            print("trivial success:", triv_l)
+            print("success:", succ_l)
+
 
     @staticmethod
     def Anticomm_Test_single(genus, n, n_omega=11, eps=Parameters.square_zero_test_eps):
@@ -1412,14 +1475,13 @@ class WOHairyGC(GraphComplex.GraphComplex):
 
         excess = 3*(genus - 1) + 2*n - 2*n_omega
         assert excess >= 0
-        assert isinstance(excess, int)
         n_omega_max = n_omega + (excess // 2)
-        assert isinstance(n_omega_max, int)
+        deg_max = 3*genus + n + 19 - 2*n_omega
 
         GC = WOHairyGC(genus_range=[genus], 
                 n_range=[n], 
                 omega_range=range(n_omega, n_omega_max + 1), 
-                degree_range=range(deg_min, deg_min+15), 
+                degree_range=range(deg_min, deg_max + 1), 
                 differentials=['contract', 'epstoomega'])
 
         GC.build_basis(ignore_existing_files=False)
