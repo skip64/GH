@@ -5,8 +5,8 @@ For more detailed Information see the following references:
 - Weight 11 compactly supported cohomology of moduli spaces of curves: https://arxiv.org/abs/2302.04204
 - Weight 11 Compactly Supported Cohomology of Moduli Spaces of Curves in excess four: https://arxiv.org/abs/2407.16372
 
-This file implements the basis-generation of these Graph-complexes.
-This is achieved using the following three classes:
+This file implements the basis-generation and differential operators of these graph complexes.
+This is achieved using the following classes:
 
     WOHairyComponentGVS: 
         generates the connected compontents of such graphs.
@@ -21,6 +21,20 @@ This is achieved using the following three classes:
     WOHairyGVS:
         selects, for some given cohomoligcal degree, the relevant graphs 
         from WOHairyAggregatedGVS and puts them in a single file.
+
+    EpsToOmegaGO:
+        graph operator which replaces an epsilon-hair with an omega-hair
+        main functionality implemented in operate_on
+
+    ContractEdgeGO:
+        graph operator which contracts an edge of the graph
+        main functionality implemented in operate_on
+
+    WOHairyGC:
+        graph complex which uses the above classes to generate the basis and the differential operators
+        further contains testing functions and cohomology computation functions
+
+Unittests are implemented in the file "TestWOHairyGC.py"
 
 """
 
@@ -668,8 +682,7 @@ class WOHairyGVS(WOHairyAggregatedGVS):
                                    ('omegas', self.n_omega), ('degree', self.degree)])
 
 
-    # since we don't a priori know the number of epsilons, 
-    # we also need to pass the total number of vertices of the graph to compute n_epsilon 
+    # since we don't a priori know the number of epsilons, we also need it to compute the partition 
     def get_partition(self, n_epsilon):
         
         # knowing the number of epsilons we can use the previously implemented partition
@@ -1519,45 +1532,81 @@ class WOHairyGC(GraphComplex.GraphComplex):
                     else:
                         assert False, 'Anitcomm-Test failed!'
 
+
     @staticmethod
-    def compute_cohomology_dim(degree, genus, n, n_omega=11):
+    # compute the cohomology dimension for a given (genus, n) pair
+    def compute_cohomology_dim(degree, genus, n, n_omega=11, prev_r2=None):
+        
+        if prev_r2 != None: 
+            assert isinstance(prev_r2, int)
+            assert prev_r2 >= 0
 
-        D_Cont_deg = ContractEdgesGO.generate_operator(degree=degree, genus=genus, n=n, n_omega=n_omega)
+
+        D_list = []
+
+        # the r2 from the previous degree is equal to the r1 of the current degree
+        # hence, if we already have it, we can skip the computation of r1
+        if prev_r2 == None: 
+            D_Cont_deg = ContractEdgesGO.generate_operator(degree=degree, genus=genus, n=n, n_omega=n_omega)
+            D_eps_deg = EpsToOmegaGO.generate_operator(degree=degree, genus=genus, n=n, n_omega=n_omega)
+            D_list.append(D_Cont_deg)
+            D_list.append(D_eps_deg)
+
         D_Cont_deg_p1 = ContractEdgesGO.generate_operator(degree=degree+1, genus=genus, n=n, n_omega=n_omega)
-        D_eps_deg = EpsToOmegaGO.generate_operator(degree=degree, genus=genus, n=n, n_omega=n_omega)
         D_eps_deg_p1 = EpsToOmegaGO.generate_operator(degree=degree+1, genus=genus, n=n, n_omega=n_omega)
+        D_list.append(D_Cont_deg_p1)
+        D_list.append(D_eps_deg_p1)
 
-        for op in [D_Cont_deg, D_Cont_deg_p1, D_eps_deg, D_eps_deg_p1]:
-            op.domain.build_basis(skip_existing_files=False)
-            op.target.build_basis(skip_existing_files=False)
 
-            op.build_matrix(skip_existing_files=False)
+        for D in D_list:
+            D.domain.build_basis(skip_existing_files=False)
+            D.target.build_basis(skip_existing_files=False)
 
-        D_Cont_deg_mat = D_Cont_deg.get_matrix()
+            D.build_matrix(skip_existing_files=False)
+
+
+        if prev_r2 == None: 
+            D_Cont_deg_mat = D_Cont_deg.get_matrix()
+            D_eps_deg_mat = D_eps_deg.get_matrix()
+
         D_Cont_deg_p1_mat = D_Cont_deg_p1.get_matrix()
-        D_eps_deg_mat = D_eps_deg.get_matrix()
         D_eps_deg_p1_mat = D_eps_deg_p1.get_matrix()
 
-        assert D_Cont_deg.domain == D_eps_deg.domain
-        deg_double_mat = D_Cont_deg_mat.stack(D_eps_deg_mat)
+        if prev_r2 == None: 
+            assert D_Cont_deg.domain == D_eps_deg.domain
+            deg_double_mat = D_Cont_deg_mat.stack(D_eps_deg_mat)
 
         assert D_Cont_deg_p1.domain == D_eps_deg_p1.domain
         deg_p1_double_mat = D_Cont_deg_p1_mat.stack(D_eps_deg_p1_mat) 
         
+
         d = WOHairyGVS(genus=genus, n=n, n_omega=n_omega, degree=degree).get_dimension()
-        r1 = deg_double_mat.rank()
+
+        print("computing ranks for: degree =", degree, ", dimension =", d)
+
+        if prev_r2 == None: 
+            r1 = deg_double_mat.rank()
+        else:
+            print("r1 = r2 from previous degree")
+            r1 = prev_r2
+        
+        print("computing r2")
         r2 = deg_p1_double_mat.rank()
+        print("computing r3")
         r3 = D_eps_deg_p1_mat.rank()
 
         cohom_dim = d - r1 - r2 + r3
 
+
         assert cohom_dim >= 0
         if cohom_dim > 0: print("k =", degree, ":", cohom_dim)
 
-        return cohom_dim
+        return cohom_dim, r2
 
 
     @staticmethod
+    # used for training the model in WOHairyGC_get_dimension_predictor.py
+    # which again lets us obtain: max_basis_dimension_estimate()
     def max_basis_dimension(genus, n, n_omega=11):
  
         excess = 3*(genus - 1) + 2*n - 2*n_omega
@@ -1566,7 +1615,7 @@ class WOHairyGC(GraphComplex.GraphComplex):
         deg_min = 22 - n_omega + genus - 1
         deg_max = 3*genus + n + 19 - 2*n_omega
 
-        assert deg_max >= deg_min, "deg_max is cannot be correct!"
+        assert deg_max >= deg_min, "deg_max cannot be correct!"
 
         max_dim = 0
 
@@ -1585,21 +1634,25 @@ class WOHairyGC(GraphComplex.GraphComplex):
 
 
     @staticmethod
-    # model from WOHairyGC_get_dimension_predictor.py
+    # model obtained from WOHairyGC_get_dimension_predictor.py
     def max_basis_dimension_estimate(genus, n):
-        coefficients = [3.56262266, 2.77371366, 0.08670416]
-        intercept = -32.78327691265262
-        return np.exp(coefficients[0]*genus + coefficients[1]*n + coefficients[2]*genus*n + intercept)
+        n_exp = 1.7
+        coefficients = [2.84547639, 0.33797069, 0.24190675]
+        intercept = -24.538197700729306
+        return int(np.exp(coefficients[0]*genus + coefficients[1]*(n**n_exp) + coefficients[2]*genus*n + intercept))
 
 
     @staticmethod
+    # compute the cohomology dimension for all (genus, n) pairs by work-estimate
+    # saves the results in a csv file
     def compute_cohomology_dim_all(g_max=20, n_max=20, n_omega=11):
 
         jobs = []
         for genus in range(1, g_max + 1):
             for n in range(n_max + 1):
                 basis_estimate = WOHairyGC.max_basis_dimension_estimate(genus, n)
-                jobs.append((genus, n, basis_estimate))
+                if basis_estimate < 1000000:
+                    jobs.append((genus, n, basis_estimate))
 
         table = [["?" for _ in range(n_max+2)] for _ in range(1,g_max+2)]
         table[0][0] = "g / n"
@@ -1611,7 +1664,7 @@ class WOHairyGC(GraphComplex.GraphComplex):
         # sort jobs by basis estimate
         jobs.sort(key=lambda x: x[2])
         print("g_n's sorted by basis estimate")
-        print([(job[0], job[1]) for job in jobs])
+        print(jobs)
 
         # try to load the table from a file if it already exists
         # this prevents recomputation of ranks
@@ -1634,21 +1687,28 @@ class WOHairyGC(GraphComplex.GraphComplex):
         for genus, n, basis_estimate in jobs:
 
             if (genus, n) in already_computed_g_n:
+                print("")
                 print("Already computed (genus, n) = ", (genus, n))
+                print("max_basis_dim:", WOHairyGC.max_basis_dimension(genus, n), " / ", WOHairyGC.max_basis_dimension_estimate(genus, n), "(estimate)")
                 continue
-
+            
+            print("")
             print("(genus, n) = ", (genus, n))
             excess = 3*(genus - 1) + 2*n - 2*n_omega
             print("excess:", excess)
+
+            print("max_basis_dim_estimate:", WOHairyGC.max_basis_dimension_estimate(genus, n))
 
             deg_min = 22 - n_omega + genus - 1
             deg_max = 3*genus + n + 19 - 2*n_omega
             degree_range = range(deg_min, deg_max+3)
 
             non_zero_dim_list = []
+
+            r2 = None
             for degree in degree_range:
 
-                cohom_dim = WOHairyGC.compute_cohomology_dim(degree=degree, genus=genus, n=n, n_omega=n_omega)
+                cohom_dim, r2 = WOHairyGC.compute_cohomology_dim(degree=degree, genus=genus, n=n, n_omega=n_omega, prev_r2=r2)
 
                 if cohom_dim > 0:
                     non_zero_dim_list.append((degree, cohom_dim))
@@ -1663,8 +1723,7 @@ class WOHairyGC(GraphComplex.GraphComplex):
             else:
                 table[genus][n+1] = "0"
 
-            print("max_basis_dim:", WOHairyGC.max_basis_dimension(genus, n))
-            print("max_basis_dim_estimate:", WOHairyGC.max_basis_dimension_estimate(genus, n))
+            print("max_basis_dim:", WOHairyGC.max_basis_dimension(genus, n), " / ", WOHairyGC.max_basis_dimension_estimate(genus, n), "(estimate)")
             print("Starting to write 'table.csv'")
 
             # Save the table to a CSV file

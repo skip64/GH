@@ -244,9 +244,10 @@ class TestOperators(unittest.TestCase):
         deg_max = 3*genus + n + 19 - 2*n_omega
         degree_range = range(deg_min, deg_max+3)
         
+        r2 = None
         for degree in degree_range:
-
-            cohom_dim = WOHairyGC.compute_cohomology_dim(degree=degree, genus=genus, n=n, n_omega=n_omega)
+            
+            cohom_dim, r2 = WOHairyGC.compute_cohomology_dim(degree=degree, genus=genus, n=n, n_omega=n_omega, prev_r2=r2)
             
             if cohom_dim == 0:
                 assert degree not in nonzero_degrees, "(g,n) = "+ str((genus, n)) + " degree: " + str(degree)
