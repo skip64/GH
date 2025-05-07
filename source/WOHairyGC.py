@@ -1559,8 +1559,6 @@ class WOHairyGC(GraphComplex.GraphComplex):
 
     @staticmethod
     def max_basis_dimension(genus, n, n_omega=11):
-
-        data = []
  
         excess = 3*(genus - 1) + 2*n - 2*n_omega
         if excess < 0: return 0
@@ -1589,32 +1587,55 @@ class WOHairyGC(GraphComplex.GraphComplex):
     @staticmethod
     # model from WOHairyGC_get_dimension_predictor.py
     def max_basis_dimension_estimate(genus, n):
-        coefficients = [3.31278787, 2.70597316]
-        intercept = -28.540313445876578
-        return np.exp(coefficients[0]*genus + coefficients[1]*n + intercept)
+        coefficients = [3.56262266, 2.77371366, 0.08670416]
+        intercept = -32.78327691265262
+        return np.exp(coefficients[0]*genus + coefficients[1]*n + coefficients[2]*genus*n + intercept)
 
 
     @staticmethod
     def compute_cohomology_dim_all(g_max=20, n_max=20, n_omega=11):
 
         jobs = []
-        for genus in range(g_max + 1):
+        for genus in range(1, g_max + 1):
             for n in range(n_max + 1):
                 basis_estimate = WOHairyGC.max_basis_dimension_estimate(genus, n)
                 jobs.append((genus, n, basis_estimate))
 
-        table = [["?" for _ in range(n_max+2)] for _ in range(g_max+2)]
+        table = [["?" for _ in range(n_max+2)] for _ in range(1,g_max+2)]
         table[0][0] = "g / n"
         for n in range(0, n_max+1): 
             table[0][n+1] = str(n)
-        for g in range(0, g_max+1):
-            table[g+1][0] = str(g)
+        for g in range(1, g_max+1):
+            table[g][0] = str(g)
 
         # sort jobs by basis estimate
         jobs.sort(key=lambda x: x[2])
+        print("g_n's sorted by basis estimate")
         print([(job[0], job[1]) for job in jobs])
 
+        # try to load the table from a file if it already exists
+        # this prevents recomputation of ranks
+        try:
+            with open("table.csv", "r", newline="") as file:
+                reader = csv.reader(file)
+                table = [row for row in reader]
+        except FileNotFoundError:
+            pass  # no table file yet
+
+        already_computed_g_n = []
+        for g in range(1,g_max+1):
+            for np1 in range(1,n_max+2):
+                if table[g][np1] != "?":
+                    already_computed_g_n.append((g, np1-1))
+        print("already_computed_g_n")
+        print(already_computed_g_n)
+
+
         for genus, n, basis_estimate in jobs:
+
+            if (genus, n) in already_computed_g_n:
+                print("Already computed (genus, n) = ", (genus, n))
+                continue
 
             print("(genus, n) = ", (genus, n))
             excess = 3*(genus - 1) + 2*n - 2*n_omega
@@ -1633,22 +1654,25 @@ class WOHairyGC(GraphComplex.GraphComplex):
                     non_zero_dim_list.append((degree, cohom_dim))
 
             if len(non_zero_dim_list) > 0:
-                table[genus+1][n+1] = ""
+                table[genus][n+1] = ""
                 for i, (degree, cohom_dim) in enumerate(non_zero_dim_list):
-                    table[genus+1][n+1] += "k=" + str(degree) + ": " + str(cohom_dim)
+                    table[genus][n+1] += "k=" + str(degree) + ": " + str(cohom_dim)
 
                     if i < len(non_zero_dim_list) - 1:
-                        table[genus+1][n+1] += "\n"
+                        table[genus][n+1] += "\n"
             else:
-                table[genus+1][n+1] = "0"
+                table[genus][n+1] = "0"
 
+            print("max_basis_dim:", WOHairyGC.max_basis_dimension(genus, n))
+            print("max_basis_dim_estimate:", WOHairyGC.max_basis_dimension_estimate(genus, n))
+            print("Starting to write 'table.csv'")
 
             # Save the table to a CSV file
             with open("table.csv", "w", newline="") as file:
                 writer = csv.writer(file)
                 writer.writerows(table)
 
-            #print("Table saved to 'table.csv'")
+            print("Table saved to 'table.csv'")
 
 
 

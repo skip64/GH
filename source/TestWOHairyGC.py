@@ -323,18 +323,18 @@ def suite():
 
     suite = unittest.TestSuite()
 
-    #suite.addTest(TestBasisGeneration('test_double_leg_variants'))
-    #suite.addTest(TestBasisGeneration('test_single_vertex_variants'))
-    #suite.addTest(TestBasisGeneration('test_trees'))
-    #suite.addTest(TestBasisGeneration('test_mutliple_components'))
-    #suite.addTest(TestBasisGeneration('test_bases_by_excess'))
+    suite.addTest(TestBasisGeneration('test_double_leg_variants'))
+    suite.addTest(TestBasisGeneration('test_single_vertex_variants'))
+    suite.addTest(TestBasisGeneration('test_trees'))
+    suite.addTest(TestBasisGeneration('test_mutliple_components'))
+    suite.addTest(TestBasisGeneration('test_bases_by_excess'))
 
-    #suite.addTest(TestBasisGeneration('test_eulerChar'))
+    suite.addTest(TestBasisGeneration('test_eulerChar'))
 
 
-    #suite.addTest(TestOperators('DSquareTest_EpsToOmega')) 
-    #suite.addTest(TestOperators('DSquareTest_ContractEdges')) 
-    #suite.addTest(TestOperators('Anticommutativity_Test'))
+    suite.addTest(TestOperators('DSquareTest_EpsToOmega')) 
+    suite.addTest(TestOperators('DSquareTest_ContractEdges')) 
+    suite.addTest(TestOperators('Anticommutativity_Test'))
 
     suite.addTest(TestOperators('Cohom_dim_Test'))
 
